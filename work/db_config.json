@@ -1,0 +1,45 @@
+{
+  "database_path": "C:\\Users\\admla\\Documents\\Codex\\2026-06-02\\files-mentioned-by-the-user-02\\outputs\\cvsig_prices_2026-06-02.sqlite",
+  "source_excel_path": "C:\\Users\\admla\\Downloads\\02.06 ЦВСИГ.xlsx",
+  "source_files": [
+    {
+      "path": "C:\\Users\\admla\\Downloads\\02.06 ЦВСИГ.xlsx",
+      "price_date": "2026-06-02",
+      "vat_note": "руб. без НДС"
+    },
+    {
+      "path": "C:\\Users\\admla\\Desktop\\РВС.xls",
+      "price_date": "2026-05-26",
+      "vat_note": "руб. с НДС"
+    },
+    {
+      "path": "C:\\Users\\admla\\Desktop\\Протей\\Протей.xlsx",
+      "price_date": "2026-06-02",
+      "vat_note": "руб. с НДС"
+    },
+    {
+      "path": "C:\\Users\\admla\\Downloads\\Дагестан 23.04.xls",
+      "price_date": "2026-04-23",
+      "vat_note": "руб. с НДС"
+    },
+    {
+      "path": "C:\\Users\\admla\\Documents\\Codex\\2026-04-24\\excel\\reliable_price_database_v2.csv",
+      "price_date": "2026-04-24",
+      "vat_note": "руб. с НДС",
+      "kind": "trusted unit-price reference"
+    }
+  ],
+  "price_date": "multiple",
+  "primary_views": {
+    "line_view": "v_price_lines",
+    "price_view": "v_prices"
+  },
+  "notes": [
+    "Use the SQLite database for all later price/material/installation lookups in this chat.",
+    "Materials and installation are stored as separate records in prices.price_kind.",
+    "Use v_price_lines for one row per original position with material and installation prices side by side.",
+    "Use v_prices for normalized one-row-per-price-kind queries.",
+    "All uploaded source prices are to be treated as with VAT, even if a source header says without VAT.",
+    "The 2026-04-24 reliable reference stores unit prices only; total_price values are intentionally null."
+  ]
+}
