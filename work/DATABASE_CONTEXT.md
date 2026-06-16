@@ -14,17 +14,18 @@ Use this file as the starting point for future tasks about prices, materials, in
 - `C:\Users\admla\Downloads\Дагестан 23.04.xls`
 - `C:\Users\admla\Documents\Codex\2026-04-24\excel\reliable_price_database_v2.csv`
 - `C:\Users\admla\Downloads\ЦВСИГ (16.06) - 18.xlsx`
+- `C:\Users\admla\Downloads\КП Технология - Слаботочные системы от 16.06.xlsx`
 
 Snapshot dates: `2026-06-02`, `2026-05-26`, `2026-04-23`, `2026-04-24`, and `2026-06-16`.
 
 ## What Is Stored
 
-- 2 742 price positions / reference rows.
-- 4 831 price records.
-- Materials: 2 579 records, total `177 172 450.56` RUB.
-- Installation: 2 252 records, total `244 857 686.00` RUB.
+- 2 960 price positions / reference rows.
+- 5 267 price records.
+- Materials: 2 797 records, total `187 531 621.93` RUB.
+- Installation: 2 470 records, total `251 401 276.44` RUB.
 - Unit-price reference rows from `Надежная база 2026-04-24` do not have total sums, so they do not change material/work total totals above.
-- Systems include `АПС`, `ОТС`, `СКС`, `СКУД`, `СОТ`, `РВС`, `Протей`, `Дагестан / ...`, plus `Надежная база 2026-04-24 / AUTO_OK`, `/ CHECK`, `/ MANUAL`.
+- Systems include `АПС`, `ОТС`, `СКС`, `СКУД`, `СОТ`, `РВС`, `Протей`, `Дагестан / ...`, `КП Технология / ...`, plus `Надежная база 2026-04-24 / AUTO_OK`, `/ CHECK`, `/ MANUAL`.
 - User clarified on 2026-06-08: all uploaded source prices are `руб. с НДС`, even if a source column header says `без НДС`. Current `prices.vat_note` values follow this rule for imported user documents.
 
 ## Tables
