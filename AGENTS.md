@@ -13,6 +13,7 @@ It currently includes prices imported from:
 - `C:\Users\admla\Documents\Codex\2026-04-24\excel\reliable_price_database_v2.csv`
 - `C:\Users\admla\Downloads\ЦВСИГ (16.06) - 18.xlsx`
 - `C:\Users\admla\Downloads\КП Технология - Слаботочные системы от 16.06.xlsx`
+- `C:\Users\admla\Downloads\krasny_zor (26.06).xlsx`
 
 The 2026-04-24 reliable CSV is a trusted unit-price reference. It stores recommended unit prices with VAT and status groups `AUTO_OK`, `CHECK`, and `MANUAL`; use status and note fields when judging confidence.
 

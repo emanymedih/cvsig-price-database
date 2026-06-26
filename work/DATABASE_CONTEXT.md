@@ -15,17 +15,18 @@ Use this file as the starting point for future tasks about prices, materials, in
 - `C:\Users\admla\Documents\Codex\2026-04-24\excel\reliable_price_database_v2.csv`
 - `C:\Users\admla\Downloads\ЦВСИГ (16.06) - 18.xlsx`
 - `C:\Users\admla\Downloads\КП Технология - Слаботочные системы от 16.06.xlsx`
+- `C:\Users\admla\Downloads\krasny_zor (26.06).xlsx`
 
-Snapshot dates: `2026-06-02`, `2026-05-26`, `2026-04-23`, `2026-04-24`, and `2026-06-16`.
+Snapshot dates: `2026-06-02`, `2026-05-26`, `2026-04-23`, `2026-04-24`, `2026-06-16`, and `2026-06-26`.
 
 ## What Is Stored
 
-- 2 960 price positions / reference rows.
-- 5 267 price records.
-- Materials: 2 797 records, total `187 531 621.93` RUB.
-- Installation: 2 470 records, total `251 401 276.44` RUB.
+- 3 003 price positions / reference rows.
+- 5 352 price records.
+- Materials: 2 839 records, total `188 732 971.67` RUB.
+- Installation: 2 513 records, total `253 214 194.44` RUB.
 - Unit-price reference rows from `Надежная база 2026-04-24` do not have total sums, so they do not change material/work total totals above.
-- Systems include `АПС`, `ОТС`, `СКС`, `СКУД`, `СОТ`, `РВС`, `Протей`, `Дагестан / ...`, `КП Технология / ...`, plus `Надежная база 2026-04-24 / AUTO_OK`, `/ CHECK`, `/ MANUAL`.
+- Systems include `АПС`, `ОТС`, `СКС`, `СКУД`, `СОТ`, `РВС`, `Протей`, `Дагестан / ...`, `КП Технология / ...`, `Красный Зор / ...`, plus `Надежная база 2026-04-24 / AUTO_OK`, `/ CHECK`, `/ MANUAL`.
 - User clarified on 2026-06-08: all uploaded source prices are `руб. с НДС`, even if a source column header says `без НДС`. Current `prices.vat_note` values follow this rule for imported user documents.
 
 ## Tables
