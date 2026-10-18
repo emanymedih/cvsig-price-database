@@ -1,0 +1,48 @@
+name: probe-sites
+on:
+  push:
+    branches: [probe/sites]
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reachability
+        run: |
+          UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36"
+          for u in \
+            https://www.tinko.ru/ \
+            https://www.tinko.ru/catalog/product/004432/ \
+            "https://www.tinko.ru/upload/exchange/public/pricelist/pricetin.xlsx" \
+            "https://www.tinko.ru/upload/exchange/public/price-stock/price.xlsx" \
+            https://satro-paladin.com/catalog/product/1853/ \
+            https://www.etm.ru/ \
+            https://www.etm.ru/catalog/ ; do
+            curl -sS -L -A "$UA" -o /tmp/out -w "%{http_code} size=%{size_download} t=%{time_total}s type=%{content_type} $u\n" --max-time 60 "$u" || echo "FAIL $u"
+          done
+      - name: Inspect Tinko price list
+        run: |
+          pip -q install openpyxl
+          curl -sS -L -o pricetin.xlsx "https://www.tinko.ru/upload/exchange/public/pricelist/pricetin.xlsx"
+          curl -sS -L -o stock.xlsx "https://www.tinko.ru/upload/exchange/public/price-stock/price.xlsx"
+          ls -la *.xlsx
+          python - <<'PY'
+          import openpyxl
+          for f in ("pricetin.xlsx", "stock.xlsx"):
+              wb = openpyxl.load_workbook(f, read_only=True, data_only=True)
+              print("=====", f, wb.sheetnames)
+              for ws in wb.worksheets[:2]:
+                  print("--- sheet", ws.title, "max_row", ws.max_row, "max_col", ws.max_column)
+                  for i, row in enumerate(ws.iter_rows(values_only=True)):
+                      if i >= 18: break
+                      print(i + 1, [c for c in row][:14])
+          PY
+      - name: Product page snippets
+        run: |
+          UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36"
+          curl -sS -L -A "$UA" https://www.tinko.ru/catalog/product/004432/ -o t.html
+          grep -o -i -E '.{0,120}(розничн|оптов|ндс|price).{0,160}' t.html | head -15
+          echo ===== satro
+          curl -sS -L -A "$UA" https://satro-paladin.com/catalog/product/1853/ -o s.html
+          grep -o -i -E '.{0,120}(розничн|цена|ндс|"price"|itemprop="price").{0,160}' s.html | head -15
+          echo ===== etm
+          curl -sS -L -A "$UA" https://www.etm.ru/ -o e.html; head -c 800 e.html
