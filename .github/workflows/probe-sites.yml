@@ -2,47 +2,65 @@ name: probe-sites
 on:
   push:
     branches: [probe/sites]
+permissions:
+  contents: write
 jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: Reachability
+      - uses: actions/checkout@v4
+      - name: Probe
+        env:
+          UA: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36"
         run: |
-          UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36"
+          mkdir -p probe && O=probe/out.txt && : > $O
+          echo "== runner IP country" >> $O
+          curl -sS --max-time 20 https://ipinfo.io/json >> $O 2>&1 || true
+          echo >> $O; echo "== reachability" >> $O
           for u in \
             https://www.tinko.ru/ \
             https://www.tinko.ru/catalog/product/004432/ \
-            "https://www.tinko.ru/upload/exchange/public/pricelist/pricetin.xlsx" \
-            "https://www.tinko.ru/upload/exchange/public/price-stock/price.xlsx" \
+            https://www.tinko.ru/upload/exchange/public/pricelist/pricetin.xlsx \
+            https://www.tinko.ru/upload/exchange/public/price-stock/price.xlsx \
             https://satro-paladin.com/catalog/product/1853/ \
             https://www.etm.ru/ \
             https://www.etm.ru/catalog/ ; do
-            curl -sS -L -A "$UA" -o /tmp/out -w "%{http_code} size=%{size_download} t=%{time_total}s type=%{content_type} $u\n" --max-time 60 "$u" || echo "FAIL $u"
+            curl -sS -L -A "$UA" -o /tmp/x -w "%{http_code} size=%{size_download} t=%{time_total}s type=%{content_type} $u\n" --max-time 90 "$u" >> $O 2>&1 || echo "FAIL $u" >> $O
           done
-      - name: Inspect Tinko price list
-        run: |
           pip -q install openpyxl
-          curl -sS -L -o pricetin.xlsx "https://www.tinko.ru/upload/exchange/public/pricelist/pricetin.xlsx"
-          curl -sS -L -o stock.xlsx "https://www.tinko.ru/upload/exchange/public/price-stock/price.xlsx"
-          ls -la *.xlsx
-          python - <<'PY'
+          curl -sS -L -A "$UA" -o pricetin.xlsx https://www.tinko.ru/upload/exchange/public/pricelist/pricetin.xlsx || true
+          curl -sS -L -A "$UA" -o stock.xlsx https://www.tinko.ru/upload/exchange/public/price-stock/price.xlsx || true
+          ls -la *.xlsx >> $O 2>&1
+          python - >> $O 2>&1 <<'PY'
           import openpyxl
           for f in ("pricetin.xlsx", "stock.xlsx"):
-              wb = openpyxl.load_workbook(f, read_only=True, data_only=True)
+              try:
+                  wb = openpyxl.load_workbook(f, read_only=True, data_only=True)
+              except Exception as e:
+                  print("=====", f, "ERROR", e); continue
               print("=====", f, wb.sheetnames)
-              for ws in wb.worksheets[:2]:
+              for ws in wb.worksheets[:3]:
                   print("--- sheet", ws.title, "max_row", ws.max_row, "max_col", ws.max_column)
                   for i, row in enumerate(ws.iter_rows(values_only=True)):
-                      if i >= 18: break
-                      print(i + 1, [c for c in row][:14])
+                      if i >= 15: break
+                      print(i + 1, list(row)[:16])
+              # find C2000-M row to compare with the site price
+              ws = wb.worksheets[0]
+              hits = 0
+              for row in ws.iter_rows(values_only=True):
+                  s = " ".join(str(c) for c in row if c is not None)
+                  if "С2000-М " in s or s.endswith("С2000-М") or "004432" in s:
+                      print("HIT", list(row)[:16]); hits += 1
+                      if hits > 3: break
           PY
-      - name: Product page snippets
-        run: |
-          UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36"
-          curl -sS -L -A "$UA" https://www.tinko.ru/catalog/product/004432/ -o t.html
-          grep -o -i -E '.{0,120}(розничн|оптов|ндс|price).{0,160}' t.html | head -15
-          echo ===== satro
-          curl -sS -L -A "$UA" https://satro-paladin.com/catalog/product/1853/ -o s.html
-          grep -o -i -E '.{0,120}(розничн|цена|ндс|"price"|itemprop="price").{0,160}' s.html | head -15
-          echo ===== etm
-          curl -sS -L -A "$UA" https://www.etm.ru/ -o e.html; head -c 800 e.html
+          echo "== tinko product page" >> $O
+          curl -sS -L -A "$UA" https://www.tinko.ru/catalog/product/004432/ -o t.html || true
+          grep -o -i -E '.{0,100}(розничн|оптов|ндс).{0,140}' t.html | head -12 >> $O || true
+          echo "== satro product page" >> $O
+          curl -sS -L -A "$UA" https://satro-paladin.com/catalog/product/1853/ -o s.html || true
+          grep -o -i -E '.{0,100}(розничн|ндс|itemprop="price"|"price"|price_value|product-price|цена).{0,140}' s.html | head -15 >> $O || true
+          echo "== etm head" >> $O
+          curl -sS -L -A "$UA" https://www.etm.ru/ -o e.html || true
+          head -c 1200 e.html >> $O || true
+          git config user.name "probe-bot"; git config user.email "probe-bot@users.noreply.github.com"
+          git add probe/out.txt && git commit -m "probe results" && git push
