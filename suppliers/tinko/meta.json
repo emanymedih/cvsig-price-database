@@ -1,0 +1,15 @@
+{
+ "source": "https://www.tinko.ru/upload/exchange/public/price-stock/price.xlsx",
+ "source_title": "Цены и остатки ТД ТИНКО на 17.10.2026 17:28:02",
+ "source_timestamp": "2026-10-17T17:28:02+03:00",
+ "source_rows": 84724,
+ "selected_rows": 249,
+ "watch_terms": 86,
+ "watch_sha256": "0f43850f969d0614555d3f74cefa1af6d9c087a3b078a83e5ed7f7eab9db6daf",
+ "capped_terms": [
+  "АК-2",
+  "МПН"
+ ],
+ "price_column": "Цена розница",
+ "vat": "Розничная цена Тинко включает НДС (подтверждено пользователем 18.10.2026)"
+}
