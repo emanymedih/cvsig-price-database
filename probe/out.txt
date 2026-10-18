@@ -1,0 +1,124 @@
+== runner IP country
+{
+  "ip": "130.131.223.227",
+  "city": "Des Moines",
+  "region": "Iowa",
+  "country": "US",
+  "loc": "41.6005,-93.6091",
+  "org": "AS8075 Microsoft Corporation",
+  "postal": "50309",
+  "timezone": "America/Chicago",
+  "readme": "https://ipinfo.io/missingauth"
+}
+== reachability
+200 size=681037 t=2.126738s type=text/html;charset=utf-8 https://www.tinko.ru/
+200 size=894986 t=2.207902s type=text/html;charset=utf-8 https://www.tinko.ru/catalog/product/004432/
+200 size=8319517 t=3.002995s type=application/vnd.openxmlformats-officedocument.spreadsheetml.sheet https://www.tinko.ru/upload/exchange/public/pricelist/pricetin.xlsx
+200 size=16894301 t=8.789735s type=application/vnd.openxmlformats-officedocument.spreadsheetml.sheet https://www.tinko.ru/upload/exchange/public/price-stock/price.xlsx
+200 size=368132 t=1.639491s type=text/html; charset=UTF-8 https://satro-paladin.com/catalog/product/1853/
+444 size=701 t=3.809406s type=text/html; charset=windows-1251 https://www.etm.ru/
+444 size=701 t=1.596165s type=text/html; charset=windows-1251 https://www.etm.ru/catalog/
+-rw-r--r-- 1 runner runner  8319517 Oct 18 09:24 pricetin.xlsx
+-rw-r--r-- 1 runner runner 16894301 Oct 18 09:24 stock.xlsx
+===== pricetin.xlsx ['ОПС', 'СОТ', 'СКУД', 'Дф', 'РО', 'Ип', 'Пож', 'ВЗ', 'Эп', 'СВ', 'Каб', 'СДС', 'КС', 'Шк', 'СО', 'МиЗ', 'УД', 'СКС', 'Ин', 'Мм', 'ЭК']
+--- sheet ОПС max_row 5542 max_col 10
+1 [None, ' ПРАЙС-ЛИСТ № 1', None, None, None, None, None, None, None, None]
+2 [None, 'Действителен с 16.10.2026', None, None, None, None, None, None, None, None]
+3 [None, 'Средства и системы охранно-пожарной сигнализации', None, None, None, None, None, None, None, None]
+4 [None, None, None, None, None, None, None, None, None, None]
+5 [None, '№', 'Код', 'Наименование', 'Описание', 'Производитель', 'Вал./   Ед. изм.', 'Цены', None, None]
+6 [None, None, None, None, None, None, None, 1, 2, 3]
+7 [None, 1, None, 'Извещатели охранные для помещений', None, None, None, None, None, None]
+8 [None, '1.1', None, 'Извещатели магнитоконтактные', None, None, None, None, None, None]
+9 [None, '1.1.1', None, 'Для деревянных конструкций', None, None, None, None, None, None]
+10 [None, None, 279069, 'ST-DM010NC-BR', 'Магнитоконтактный; контакты размыкаются при тревоге; 15 мм (контакты замкнуты), 25 мм (контакты разомкнуты); U-коммут.30 В, P-коммут.3 Вт; t-раб.-30…+65°С; 10х18 мм (геркон и магнит). Кабельный отвод. Цвет коричневый. Пластиковый корпус. ', 'Smartec', 'руб./шт', 132, 128.5, 125]
+11 [None, None, 280894, 'ST-DM010NC-WT', 'Магнитоконтактный; контакты размыкаются при тревоге; 15 мм (контакты замкнуты), 25 мм (контакты разомкнуты); U-коммут.30 В, P-коммут.3 Вт; t-раб.-30…+65°C; 10х18 мм (геркон и магнит). Кабельный отвод. Цвет белый. Пластиковый корпус.', 'Smartec', 'руб./шт', 132, 128.5, 125]
+12 [None, None, 286034, 'ST-DM011NC-BR', 'Магнитоконтактный; контакты размыкаются при тревоге; 15 мм (контакты замкнуты), 25 мм (контакты разомкнуты); U-коммут.30 В, P-коммут.3 Вт; t-раб.-30…+65°С; 10х30 мм (геркон) 10х22 мм (магнит). Клеммы под винт. Цвет коричневый. Пластиковый корпус.', 'Smartec', 'руб./шт', 231, 225, 219]
+13 [None, None, 279070, 'ST-DM011NC-WT', 'Магнитоконтактный; контакты размыкаются при тревоге; 15 мм (контакты замкнуты), 25 мм (контакты разомкнуты); U-коммут.30 В, P-коммут.3 Вт; t-раб.-30…+65°С; 10х30 мм (геркон) 10х22 мм (магнит). Клеммы под винт. Цвет белый. Пластиковый корпус. ', 'Smartec', 'руб./шт', 231, 225, 219]
+14 [None, None, 334323, 'ST-DM015NO-BR', 'Магнитоконтактный врезной; контакты замыкаются при тревоге; 15 мм (контакты размыкаются), 25 мм (контакты замыкаются); U-коммут.30 В, P-коммут.3 Вт; t-раб.-30…+65°C; 10х22 мм (геркон и магнит). Кабельный отвод. Пластиковый корпус коричневого цвета.', 'Smartec', 'руб./шт', 429, 418.5, 408]
+15 [None, None, 283816, 'ST-DM015NO-WT', 'Магнитоконтактный; контакты замыкаются при тревоге; 15 мм (контакты размыкаются), 25 мм (контакты замыкаются); U-коммут.30 В, P-коммут.3 Вт; t-раб.-30…+65°С; 10х22 мм (геркон и магнит). Кабельный отвод. Пластиковый корпус. ', 'Smartec', 'руб./шт', 429, 418.5, 408]
+--- sheet СОТ max_row 5328 max_col 10
+1 [None, ' ПРАЙС-ЛИСТ № 2', None, None, None, None, None, None, None, None]
+2 [None, 'Действителен с 16.10.2026', None, None, None, None, None, None, None, None]
+3 [None, 'Средства и системы охранного телевидения', None, None, None, None, None, None, None, None]
+4 [None, None, None, None, None, None, None, None, None, None]
+5 [None, '№', 'Код', 'Наименование', 'Описание', 'Производитель', 'Вал./   Ед. изм.', 'Цены', None, None]
+6 [None, None, None, None, None, None, None, 1, 2, 3]
+7 [None, 1, None, 'Видеокамеры', None, None, None, None, None, None]
+8 [None, '1.1', None, 'IP-видеокамеры', None, None, None, None, None, None]
+9 [None, '1.1.1', None, 'Видеокамеры IP купольные', None, None, None, None, None, None]
+10 [None, '1.1.1.1', None, 'Hikvision', None, None, None, None, None, None]
+11 [None, None, 335167, 'DS-2CD2123G2-IS(2.8мм)(D)', 'Профессиональная видеокамера IP 2 Мп уличная  купольная с ИК подсветкой до 30м, AcuSense 1/2.8" Progressive Scan CMOS; объектив 2.8мм; механический ИК-фильтр; 0.005лк F1.6; сжатие H.265/H.265+/H.264/H.264+/MJPEG; тройной поток; 1920×1080 -25к/с; WDR 120дБ, 3D DNR, BLC, ROI, слот для microSD до 256Гб; обнаружение движения, вторжения в область и пересечения линии; классификация «человек/ТС»; аудио вход/выход 1/1; тревожные вход/выход 1/1; 1 RJ45 10M/100M Ethernet; DC12В/PoE(802.3af); 6.5 Вт; -40 °C...+60 °C; IP67; IK10; 110.8 × 84.7 мм.', 'Hikvision', 'руб./шт', 8300, 7910.5, 7521]
+12 [None, None, 326981, 'DS-2CD2123G2-IS(4мм)(D)', 'Профессиональная видеокамера IP 2 Мп уличная  купольная с ИК подсветкой до 30м, AcuSense 1/2.8" Progressive Scan CMOS; объектив 4 мм; механический ИК-фильтр; 0.005лк F1.6; сжатие H.265/H.265+/H.264/H.264+/MJPEG; тройной поток; 1920×1080 -25к/с; WDR 120дБ, 3D DNR, BLC, ROI, слот для microSD до 256Гб; режим коридора, обнаружение движения, вторжения в область и пересечения линии; классификация «человек/ТС»; аудио вход/выход - 1/1; тревожные вход/выход - 1/1; 1хRJ45 10/100 Мбит/с; DC12В/PoE(802.3af); 7.5 Вт; -40 °C...+60 °C; IP67; IK10; 110.8 × 84.7 мм.', 'Hikvision', 'руб./шт', 8750.64, 8349.57, 7948.5]
+13 [None, None, 326982, 'DS-2CD2123G2-IU(2.8мм)(D)', 'Профессиональная видеокамера IP 2 Мп уличная  купольная с ИК подсветкой до 30м, AcuSense 1/2.8" Progressive Scan CMOS; объектив 2.8 мм; механический ИК-фильтр; 0.005лк F1.6; сжатие H.265/H.265+/H.264/H.264+/MJPEG; тройной поток; 1920×1080 -25к/с; WDR 120дБ, 3D DNR, BLC, ROI, слот для microSD до 256Гб; встроенный микрофон; режим коридора, обнаружение движения, вторжения в область и пересечения линии; классификация «человек/ТС»; 1 RJ45 10M/100M Ethernet; DC12В/PoE(802.3af); 7.5 Вт; -30 °C...+60 °C; IP67; IK10; 121.4 × 92.2 мм.', 'Hikvision', 'руб./шт', 8250, 7863.7, 7477.4]
+14 [None, None, 326983, 'DS-2CD2123G2-IU(4мм)(D)', 'Профессиональная видеокамера IP 2 Мп уличная  купольная с ИК подсветкой до 30м, AcuSense 1/2.8" Progressive Scan CMOS; объектив 4 мм; механический ИК-фильтр; 0.005лк F1.6; сжатие H.265/H.265+/H.264/H.264+/MJPEG; тройной поток; 1920×1080 -25к/с; WDR 120дБ, 3D DNR, BLC, ROI, слот для microSD до 256Гб; встроенный микрофон; режим коридора, обнаружение движения, вторжения в область и пересечения линии; классификация «человек/ТС»; 1 RJ45 10M/100M Ethernet; DC12В/PoE(802.3af); 7.5 Вт; -30 °C...+60 °C; IP67;  IK10; 121.4 × 92.2 мм.', 'Hikvision', 'руб./шт', 7700, 7338, 6976]
+15 [None, None, 306857, 'DS-2CD2127G2-SU(C)(2.8mm)', 'Профессиональная видеокамера IP 2Мп купольная 1/2.8" Progressive Scan CMOS; объектив 2.8мм; механический ИК-фильтр; 0.0005лк; сжатие H.265/H.265+/H.264/H.264+/MJPEG; тройной поток; 1920×1080 - 25к/с, три потока; WDR 120дБ, 3D DNR, BLC, ROI; Видеоаналитика: обнаружение движения, вторжения в область и пересечения линии, классификация «Человек» / «ТС»; слот для microSD до 256Гб; встроенный микрофон, аудиовход/выход 1/1; тревожные вход/выход 1/1; 1 RJ45 10M/100M Ethernet; DC12В/PoE(802.3af); 6.5 Вт; -40 °C...+60 °C; IP67; IK10; 121×100 мм.', 'Hikvision', 'руб./шт', 8796.24, 8393.08, 7989.92]
+--- sheet СКУД max_row 6939 max_col 10
+1 [None, ' ПРАЙС-ЛИСТ № 3', None, None, None, None, None, None, None, None]
+2 [None, 'Действителен с 16.10.2026', None, None, None, None, None, None, None, None]
+3 [None, 'Средства и системы контроля и управления доступом', None, None, None, None, None, None, None, None]
+4 [None, None, None, None, None, None, None, None, None, None]
+5 [None, '№', 'Код', 'Наименование', 'Описание', 'Производитель', 'Вал./   Ед. изм.', 'Цены', None, None]
+6 [None, None, None, None, None, None, None, 1, 2, 3]
+7 [None, 1, None, 'Идентификаторы', None, None, None, None, None, None]
+8 [None, '1.1', None, 'Ключи электронные Touch Memory', None, None, None, None, None, None]
+9 [None, None, 260653, 'DS 1990А-F5 (желтый)', 'Электронный TM ключ DS 1990A - F5 - предназначен для использования в системах ограничения доступа, 48 битный серийный номер.', 'SLINEX', 'руб./шт', 32, 32, 32]
+10 [None, None, 260655, 'DS 1990А-F5 (зеленый)', 'Электронный TM ключ DS 1990A - F5 - предназначен для использования в системах ограничения доступа, 48 битный серийный номер.', 'SLINEX', 'руб./шт', 32, 32, 32]
+11 [None, None, 260654, 'DS 1990А-F5 (красный)', 'Электронный TM ключ DS 1990A - F5 - предназначен для использования в системах ограничения доступа, 48 битный серийный номер.', 'SLINEX', 'руб./шт', 32, 32, 32]
+12 [None, None, 260652, 'DS 1990А-F5 (синий)', 'Электронный TM ключ DS 1990A - F5 - предназначен для использования в системах ограничения доступа, 48 битный серийный номер.', 'SLINEX', 'руб./шт', 32, 32, 32]
+13 [None, None, 260656, 'DS 1990А-F5 (черный)', 'Электронный TM ключ DS 1990A - F5 - предназначен для использования в системах ограничения доступа, 48 битный серийный номер.', 'SLINEX', 'руб./шт', 32, 32, 32]
+14 [None, None, 270325, 'RW 1990 SLINEX (желтый)', 'Перезаписываемый ключ-заготовка, для копирования ключей семейства DS1990A, представляет собой электронный перезаписываемый носитель 64-битного идентификационного кода, желтый', 'SLINEX', 'руб./шт', 34, 33.15, 32.3]
+15 [None, None, 270324, 'RW 1990 SLINEX (зеленый)', 'Перезаписываемый ключ-заготовка, для копирования ключей семейства DS1990A, представляет собой электронный перезаписываемый носитель 64-битного идентификационного кода, зеленый', 'SLINEX', 'руб./шт', 34, 33.15, 32.3]
+HIT [None, None, 302315, 'С2000-М исп.02', 'Пульт контроля и управления охранно-пожарный с ЖК экраном 2х16 символов; до 127 подключаемых блоков, количество зон до 511, количество разделов до 128, количество контролируемых входов/выходов до 2048, журнал событий до 32000; два RS-485; U-пит.10.2…28.4 В, I-потр.120 мА (макс.), резервный источник питания CR2032; IP30, t-раб.-10…+55°С, 140×114×25 мм', 'Болид', 'руб./шт', 12721.31, 12232.03, 11742.74]
+HIT [None, None, 4432, 'С2000-М', 'Пульт контроля и управления с двухстрочным ЖКИ индикатором, количество контролируемых разделов - 511, количество контролируемых групп разделов 128, количество контролируемых зон 2048; интерфейсы: RS-232 - 1 шт., RS-485 - 1 шт.; U-пит.10.2…28,4 В, I-потр.60 мА, элемент питания часов реального времени CR2032; IP30, t-раб.-10…+55°С, 140×114×25 мм', 'Болид', 'руб./шт', 12721.31, 12232.03, 11742.74]
+===== stock.xlsx ['TDSheet']
+--- sheet TDSheet max_row 84728 max_col 20
+1 [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None]
+2 ['Цены и остатки ТД ТИНКО на 17.10.2026 17:28:02', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None]
+3 [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None]
+4 ['Код', 'Артикул', 'Артикул доп', 'Наименование', 'Торговое наименование', 'Ед', 'Количество доступное', 'Срок поставки', 'Цена розница', 'Цена Опт', 'Цена распродажа', 'Валюта', 'Вес, кг', 'Объем, л', 'Производитель', 'Функционал']
+5 [223782, None, None, 'Паук-ВГ, извещатель охранный вибрационный', 'Паук-ВГ', 'шт', None, 'Звоните', 10500, 9786, None, 'руб.', 0.52, 3.072, 'Охранная техника', 'Извещатель охранный поверхностный вибрационный']
+6 [223811, None, None, 'HX-80NAM, извещатель охранный объемный оптико-электронный уличный', 'HX-80NAM', 'шт', None, 'Звоните', 37400, 37400, None, 'руб.', 0.94, 6.279, 'Optex', 'Извещатель охранный оптико-электронный']
+7 [223812, None, None, 'M-10, микрофон активный миниатюрный', 'M-10', 'шт', 14, 'В наличии', 639, 543, None, 'руб.', 0.01, 0.033, 'STELBERRY', 'Микрофон']
+8 [223813, None, None, 'М-20, микрофон активный миниатюрный', 'M-20', 'шт', None, 'до 3 дней', 810, 689, None, 'руб.', 0.01, 0.03, 'STELBERRY', 'Микрофон']
+9 [223814, None, None, 'M-30, микрофон активный миниатюрный', 'M-30', 'шт', 6, 'В наличии', 1355, 1152, None, 'руб.', 0.01, 0.03, 'STELBERRY', 'Микрофон']
+10 [223815, None, None, 'M-40, микрофон активный миниатюрный', 'M-40', 'шт', 16, 'В наличии', 2025, 1721, None, 'руб.', 0.01, 0.02, 'STELBERRY', 'Микрофон']
+11 [223821, 10433, None, 'DLP кабель-канал 150х65 мм белый (010433)', 'DLP кабель-канал 150х65 мм белый (010433)', 'м', 6, 'В наличии', 2099.88, 1603.55, 1110.8, 'руб.', 1.463, 9.75, 'IEK', 'Короб']
+12 [223829, 132908614, None, 'ЛЮКС-24 СН "Выход", оповещатель охранно-пожарный световой (табло)', 'ЛЮКС-24 СН "Выход"', 'шт', None, 'до 7 дней', 1014, 851, None, 'руб.', 0.16, 0.75, 'Электротехника и Автоматика', 'Табло']
+13 [223847, 659909, None, 'Чистящая карточка удлиненная 659909 для принтеров SMART', 'Чистящая карточка удлиненная 659909', 'шт', None, 'до 3 дней', 564.2, 519.06, None, 'руб.', 0.01, 0.017, 'IDP', 'Расходный материал']
+14 [223887, None, None, 'Плазма-Exi-С "Газ уходи", оповещатель охранно-пожарный световой взрывозащищенный (табло)', 'Плазма-Ехi-С "Газ уходи"', 'шт', None, 'Звоните', 10552.74, 10284.45, None, 'руб.', 2.94, 5.684, 'Этра-спецавтоматика', 'Табло взрывозащищенное']
+15 [223900, 85, None, 'Ростов-Дон КП1 НЕРЖ, картоприемник', 'Ростов-Дон КП1 НЕРЖ', 'шт', None, 'Звоните', 108247.34, 97422.61, None, 'руб.', 28, 157.5, 'РостЕвроСтрой', 'Картоприемник']
+HIT [318623, 'AL004432', None, 'MK 200-IN (коричневый), комплект монтажа для замка', 'MK 200-IN (коричневый)', 'шт', None, 'до 3 дней', 5480, 4830, None, 'руб.', 1.8, 1.639, 'ALeko', 'Комплект монтажа для замка']
+HIT [302315, '1-561-663-515', None, 'С2000-М исп.02, пульт контроля и управления', 'С2000-М исп.02', 'шт', None, 'Звоните', 12721.31, 11742.74, None, 'руб.', 0.3, 0.399, 'Болид', 'Пульт контроля и управления']
+HIT [4341, '92-194-395', None, 'С2000-АСПТ, прибор приемно-контрольный и управления', 'С2000-АСПТ', 'шт', 644, 'В наличии', 14110.64, 13025.21, None, 'руб.', 3, 9.1, 'Болид', 'Прибор пожарный управления']
+HIT [4432, '110-058-274', None, 'С2000-М, пульт контроля и управления', 'С2000-М', 'шт', None, 'Звоните', 12721.31, 11742.74, None, 'руб.', 0.346, 1.656, 'Болид', 'Пульт контроля и управления']
+== tinko product page
+span></i></div><!----><div class="product-detail__price-info" data-v-14c86023><span data-v-14c86023>Розничная цена</span></div><!----></div><!----><!--]--><!--[--><div class="product-detail__price-light product-detail__price-wrapper" data-v-14c860
+span></i></div><!----><div class="product-detail__price-info" data-v-14c86023><span data-v-14c86023>Оптовая цена</span></div><!----></div><!----><!--]--><!--]--><div class="product-detail__price-wrapper product-detail__price-wrapper-auth" data-v
+/шт</span></span><!--]--></span></div><div class="product-card__price-info" data-v-7e0fa686><!--[-->Розничная<!--]--></div><!----></div><button class="button small cart-button slider-product__button" type data-v-7e0fa686 data-v-a4c6656b data-v-14a
+/шт</span></span><!--]--></span></div><div class="product-card__price-info" data-v-7e0fa686><!--[-->Розничная<!--]--></div><!----></div><button class="button small cart-button slider-product__button" type data-v-7e0fa686 data-v-a4c6656b data-v-14a
+/шт</span></span><!--]--></span></div><div class="product-card__price-info" data-v-7e0fa686><!--[-->Розничная<!--]--></div><!----></div><button class="button small cart-button slider-product__button" type data-v-7e0fa686 data-v-a4c6656b data-v-14a
+/шт</span></span><!--]--></span></div><div class="product-card__price-info" data-v-7e0fa686><!--[-->Розничная<!--]--></div><!----></div><button class="button small cart-button slider-product__button" type data-v-7e0fa686 data-v-a4c6656b data-v-14a
+/шт</span></span><!--]--></span></div><div class="product-card__price-info" data-v-7e0fa686><!--[-->Розничная<!--]--></div><!----></div><button class="button small cart-button slider-product__button" type data-v-7e0fa686 data-v-a4c6656b data-v-14a
+/шт</span></span><!--]--></span></div><div class="product-card__price-info" data-v-7e0fa686><!--[-->Розничная<!--]--></div><!----></div><button class="button small cart-button slider-product__button" type data-v-7e0fa686 data-v-a4c6656b data-v-14a
+/шт</span></span><!--]--></span></div><div class="product-card__price-info" data-v-7e0fa686><!--[-->Розничная<!--]--></div><!----></div><button class="button small cart-button slider-product__button" type data-v-7e0fa686 data-v-a4c6656b data-v-14a
+/шт</span></span><!--]--></span></div><div class="product-card__price-info" data-v-7e0fa686><!--[-->Розничная<!--]--></div><!----></div><button class="button small cart-button slider-product__button" type data-v-7e0fa686 data-v-a4c6656b data-v-14a
+/шт</span></span><!--]--></span></div><div class="product-card__price-info" data-v-7e0fa686><!--[-->Розничная<!--]--></div><!----></div><button class="button small cart-button slider-product__button" type data-v-7e0fa686 data-v-a4c6656b data-v-14a
+/шт</span></span><!--]--></span></div><div class="product-card__price-info" data-v-7e0fa686><!--[-->Розничная<!--]--></div><!----></div><button class="button small cart-button slider-product__button" type data-v-7e0fa686 data-v-a4c6656b data-v-14a
+== satro product page
+поставки систем безопасности: домофоны, видеонаблюдение, пожаротушение и многое другое по доступным ценам и доставкой по Москве и всей России">
+поставки систем безопасности: домофоны, видеонаблюдение, пожаротушение и многое другое по доступным ценам и доставкой по Москве и всей России">
+поставки систем безопасности: домофоны, видеонаблюдение, пожаротушение и многое другое по доступным ценам и доставкой по Москве и всей России" title="Перейти на главную страницу">
+                                                            <meta itemprop="price" content="8539">
+                                                        <div class="price">
+                                <span>Розничная цена</span>
+                        <div class="price">
+                        <div class="price">
+                        <div class="price">
+                        <div class="price">
+                        <div class="price">
+                                "price": 8539,
+                                "price": 8539,
+                                "price": 8539,
+== etm head
+<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="content-type" content="text/html; charset=windows-1251"><meta http-equiv="content-language" content="ru"></head><body style="margin:0;padding:0;height:100vh;display:flex;justify-content:center;align-items:center;background-color:#f5f5f5;font-family:Arial,sans-serif;"><div style="text-align:center;max-width:600px;padding:20px;font-size:18px;line-height:1.5;"><p>�� ��������� ������� ������ � ����� � ������������ IP-������.</p><p>��������, � ��� ������� VPN.</p><p>���������� ��������� ��� � ��������� �������.</p><p>����� �������� �������-������ 8(800)775-17-71.</p></div></body></html>
