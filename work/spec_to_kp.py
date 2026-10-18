@@ -21,7 +21,7 @@ HEAD = PatternFill("solid", fgColor="FCE8DA")
 THIN = Side(style="thin", color="000000")
 GRID = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
 MONEY = '#,##0.00 "₽"'  # fill_estimate.py restyles it into the accounting format
-WIDTHS = {"A": 8, "B": 74, "C": 43, "D": 24, "E": 9, "F": 11, "G": 16, "H": 17, "I": 16, "J": 17, "K": 29}
+WIDTHS = {"A": 7, "B": 66, "C": 40, "D": 20, "E": 8, "F": 10, "G": 15, "H": 17, "I": 15, "J": 17, "K": 34}
 EXPENSES = [  # (name, rate, base)
     ("Транспортные расходы", 0.03, "Материалы"),
     ("Расходные материалы", 0.02, "Материалы"),
@@ -142,7 +142,7 @@ def build(blocks, title: str, obj: str, rates, vat: float) -> openpyxl.Workbook:
                     "E": it["unit"], "F": it["qty"], "K": it["note"] or None}
             for col in "ABCDEFGHIJK":
                 cell(ws, f"{col}{r}", vals.get(col), h="left" if col == "B" else "center",
-                     fmt="#,##0.###" if col == "F" else MONEY if col in "GHIJ" else None)
+                     fmt=("#,##0" if float(it["qty"]).is_integer() else "#,##0.###") if col == "F" else MONEY if col in "GHIJ" else None)
             ws[f"H{r}"] = f'=IF(ISNUMBER(G{r}),ROUND(F{r}*G{r},2),"")'
             ws[f"J{r}"] = f'=IF(ISNUMBER(I{r}),ROUND(F{r}*I{r},2),"")'
             first = first or r

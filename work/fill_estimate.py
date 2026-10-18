@@ -245,9 +245,12 @@ def load_invoices() -> list[dict]:
     return rows
 
 
-def invoice_candidates(it: Item, inv: list[dict], me: dict):
+def invoice_candidates(it: Item, inv: list[dict], me: dict, auto: set | None = None):
+    """Pinned line from the mapping; automatic matching only within the invoices named by --invoice,
+    so an invoice for one object never changes prices of another estimate unnoticed."""
     if me.get("invoice"):
         return [r for r in inv if r["ref"] == me["invoice"]], "справочник"
+    inv = [r for r in inv if r["invoice"] in (auto or set())]
     ck, ak, at = key(it.code), key(it.article), tokens(it.article)
     if len(ck) >= 4:
         c = [r for r in inv if ck == r["k_code"] or (ck in r["k_name"] and contains_seq(r["toks"], tokens(it.code)))]
@@ -260,8 +263,8 @@ def invoice_candidates(it: Item, inv: list[dict], me: dict):
     return [], ""
 
 
-def invoice_result(it: Item, inv: list[dict], me: dict) -> Result | None:
-    cands, how = invoice_candidates(it, inv, me)
+def invoice_result(it: Item, inv: list[dict], me: dict, auto: set | None = None) -> Result | None:
+    cands, how = invoice_candidates(it, inv, me, auto)
     if not cands:
         if me.get("invoice"):
             return Result(notes=[f"строки счёта {me['invoice']} из справочника нет в suppliers/invoices"])
@@ -623,47 +626,111 @@ SRC_COLUMNS = [
 ]
 
 
-def _lines(value, width: float) -> int:
-    """Rough number of wrapped lines a value takes in a column of the given width."""
+def qty_format(value) -> str:
+    """Integers without a trailing separator ("400", not "400,"); fractions with up to 3 decimals."""
+    return "#,##0" if isinstance(value, (int, float)) and float(value).is_integer() else "#,##0.###"
+
+
+def _lines(value, width: float, pt: float = 12) -> int:
+    """Wrapped line count: greedy word wrap at ~1 char per width unit (Times New Roman 11–12 pt)."""
     if value is None or value == "":
         return 1
-    chars = max(width * 0.95 - 2, 1)  # conservative: a clipped line is worse than a little extra height
-    return sum(max(1, -(-len(part) // int(chars))) for part in str(value).split("\n"))
+    cap = max(int(width * (1.0 if pt <= 11 else 0.93)) - 2, 4)
+    total = 0
+    for part in str(value).split("\n"):
+        lines, cur = 1, 0
+        for word in part.split():
+            w = len(word)
+            if cur == 0:
+                cur = w
+            elif cur + 1 + w <= cap:
+                cur += 1 + w
+            else:
+                lines, cur = lines + 1, w
+            while cur > cap:  # a word longer than the line breaks anywhere
+                lines, cur = lines + 1, cur - cap
+        total += lines
+    return total
 
 
 def fit_height(ws, row: int, widths: dict, pt: float = 12, min_h: float = 18) -> None:
-    lines = max(_lines(ws.cell(row, c).value, w) for c, w in widths.items())
-    ws.row_dimensions[row].height = max(min_h, lines * pt * 1.22 + 5)
+    lines = max(_lines(ws.cell(row, c).value, w, pt) for c, w in widths.items())
+    ws.row_dimensions[row].height = max(min_h, lines * pt * 1.25 + 4)
 
 
-def hide_rate_columns(ws, start: int, last_col: int) -> None:
-    """"Прочие расходы": hide «Ставка» and «База расчёта» (user request 18.10.2026).
+def _rewire(ws, old: str, new: str) -> None:
+    """Point every formula of the sheet from cell `old` to cell `new`."""
+    pat = re.compile(r"(?<![A-Z$])" + re.escape(old) + r"(?!\d)")
+    for row in ws.iter_rows():
+        for c in row:
+            if isinstance(c.value, str) and c.value.startswith("=") and pat.search(c.value):
+                c.value = pat.sub(new, c.value)
 
-    The rates stay in their cells because the totals refer to them; format ";;;" only hides them,
-    and inner borders are removed so the expense name reads as one wide cell.
+
+def _unmerge_row(ws, r: int) -> None:
+    for m in [m for m in ws.merged_cells.ranges if m.min_row <= r <= m.max_row]:
+        ws.unmerge_cells(str(m))
+
+
+def compact_expenses(ws, start: int, last_col: int) -> None:
+    """"Прочие расходы" and "Сумма НДС": keep only № / наименование / сумма (user request 18.10.2026).
+
+    Rates move to a hidden column right of the table (outside the print area) and the formulas follow
+    them, so the totals do not change; the empty «Ставка / База / Ед. / Кол-во» cells disappear.
     """
+    hid = last_col + 1
+    hid_letter = get_column_letter(hid)
+    border_l = ws.cell(start, 1).border
     for r in range(start, ws.max_row + 1):
         vals = {c: str(ws.cell(r, c).value or "").strip().lower() for c in range(1, last_col + 1)}
-        rate = next((c for c, v in vals.items() if v == "ставка"), None)
-        base = next((c for c, v in vals.items() if v.startswith("база расч")), None)
-        if not rate or not base:
+        rate_col = next((c for c, v in vals.items() if v == "ставка"), None)
+        if not rate_col:
             continue
-        name_col = rate - 1
-        end = r + 1
-        while end <= ws.max_row and isinstance(ws.cell(end, rate).value, (int, float)) \
-                and str(ws.cell(end, 1).value or "").strip()[:1].isdigit():
-            end += 1
-        for row in range(r, end):
-            for c in range(rate, base + 1):
-                cell = ws.cell(row, c)
-                cell.number_format = ";;;"
-                b = cell.border
-                cell.border = Border(top=b.top, bottom=b.bottom, left=None,
-                                     right=b.right if c == base else None)
-            nb = ws.cell(row, name_col).border
-            ws.cell(row, name_col).border = Border(top=nb.top, bottom=nb.bottom, left=nb.left, right=None)
-        ws.cell(r, name_col).alignment = Alignment(horizontal="left", vertical="center", wrap_text=True, indent=1)
-        return
+        rows = [r]
+        e = r + 1
+        while e <= ws.max_row and str(ws.cell(e, 1).value or "").strip()[:1].isdigit():
+            rows.append(e)
+            e += 1
+        for rr in rows:
+            if rr != r:
+                rate = ws.cell(rr, rate_col)
+                ws.cell(rr, hid, rate.value).number_format = rate.number_format
+                _rewire(ws, f"{get_column_letter(rate_col)}{rr}", f"{hid_letter}{rr}")
+            _unmerge_row(ws, rr)
+            for c in range(rate_col, last_col):
+                ws.cell(rr, c).value = None
+            ws.merge_cells(start_row=rr, start_column=2, end_row=rr, end_column=last_col - 1)
+            ws.row_dimensions[rr].height = 20
+        ws.cell(r, 2).alignment = Alignment(horizontal="left", vertical="center", indent=1)
+        break
+    for r in range(start, ws.max_row + 1):
+        a = str(ws.cell(r, 1).value or "").strip()
+        if not a.lower().startswith("сумма ндс"):
+            continue
+        pct = next((c for c in range(2, last_col) if isinstance(ws.cell(r, c).value, (int, float))
+                    and "%" in (ws.cell(r, c).number_format or "")), None)
+        if pct:
+            rate = ws.cell(r, pct).value
+            ws.cell(r, hid, rate).number_format = "0%"
+            _rewire(ws, f"{get_column_letter(pct)}{r}", f"{hid_letter}{r}")
+            _unmerge_row(ws, r)
+            for c in range(2, last_col):
+                ws.cell(r, c).value = None
+            ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=last_col - 1)
+            ws.cell(r, 1).value = f'="В том числе НДС "&TEXT({hid_letter}{r},"0%")'  # follows the (hidden) rate
+            ws.cell(r, 1).alignment = Alignment(horizontal="left", vertical="center", indent=1)
+        break
+    ws.column_dimensions[hid_letter].hidden = True
+
+
+def drop_trailing_notes(ws, last_col: int) -> int:
+    """Remove the free-text notes under the table (no borders); returns the last row of the table."""
+    last_table = max(r for r in range(1, ws.max_row + 1) if ws.cell(r, last_col).border.right.style)
+    for r in range(ws.max_row, last_table, -1):
+        _unmerge_row(ws, r)
+    if ws.max_row > last_table:
+        ws.delete_rows(last_table + 1, ws.max_row - last_table)
+    return last_table
 
 
 def style_estimate(ws, lay: dict, items) -> None:
@@ -685,6 +752,9 @@ def style_estimate(ws, lay: dict, items) -> None:
             if c in money_cols:
                 cell.number_format = FIN
                 cell.alignment = Alignment(horizontal="right", vertical="center")
+            elif c == lay["qty"]:
+                cell.number_format = qty_format(cell.value)
+                cell.alignment = Alignment(horizontal="center", vertical="center")
             elif c == lay["name"]:
                 cell.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True, indent=1)
             else:
@@ -716,12 +786,29 @@ def style_estimate(ws, lay: dict, items) -> None:
         if not merged_here and ws.cell(r, 1).value is not None and ws.cell(r, last_col).value is not None \
                 and all(ws.cell(r, c).value is None for c in block):
             ws.merge_cells(start_row=r, start_column=block[0], end_row=r, end_column=block[-1])
-    hide_rate_columns(ws, items[-1].row + 1 if items else lay["first"], last_col)
+    tail = items[-1].row + 1 if items else lay["first"]
+    compact_expenses(ws, tail, last_col)
+    last_row = drop_trailing_notes(ws, last_col)
+    total_label = ws.cell(tail, 1)
+    if str(total_label.value or "").lower().startswith("итого по заполненным"):
+        total_label.value = "Итого"
+    # compact heights: title, object line, section bands, totals
+    for r in range(1, lay["header"]):
+        ws.row_dimensions[r].height = 22 if r == 1 else 16
+    item_rows = {it.row for it in items}
+    for r in range(lay["first"], last_row + 1):
+        if r not in item_rows and ws.row_dimensions[r].height and ws.row_dimensions[r].height > 22:
+            ws.row_dimensions[r].height = 20
+    ws.print_area = f"A1:{get_column_letter(last_col)}{last_row}"
     ws.print_title_rows = f"{lay['header']}:{lay['first'] - 1}"
     ws.page_setup.orientation = "landscape"
     ws.page_setup.fitToWidth, ws.page_setup.fitToHeight = 1, 0
     ws.sheet_properties.pageSetUpPr.fitToPage = True
     ws.print_options.horizontalCentered = True
+    m = ws.page_margins
+    m.top = m.bottom = 0.4
+    m.left = m.right = 0.3
+    m.header = m.footer = 0.2
 
 
 def write_sources(wb, items, results, meta, estimate_name):
@@ -783,7 +870,7 @@ def write_sources(wb, items, results, meta, estimate_name):
                 cell.number_format = FIN
                 cell.alignment = Alignment(horizontal="right", vertical="top")
             elif kind == "num":
-                cell.number_format = "#,##0.###"
+                cell.number_format = qty_format(v)
                 cell.alignment = Alignment(horizontal="center", vertical="top")
             else:
                 cell.alignment = Alignment(horizontal="left" if kind == "text" else "center", vertical="top",
@@ -859,7 +946,7 @@ def cmd_fill(args):
     for it in items:
         me = mapping_for(it, mapping)
         mat = match_material(it, trows, pages, me, base, capped)
-        by_invoice = invoice_result(it, invoices, me)
+        by_invoice = invoice_result(it, invoices, me, set(args.invoice or []))
         if by_invoice is not None and (by_invoice.price is not None or by_invoice.status == AMBIG):
             if mat.price is not None and mat.src.get("supplier") == "ТД ТИНКО":
                 by_invoice.notes.append(f"сверка: розница Тинко {fmt(mat.price)} (код {mat.src['code']})")
@@ -905,6 +992,7 @@ def main():
     f.add_argument("-o", "--output", type=Path)
     f.add_argument("--sheet")
     f.add_argument("--overwrite", action="store_true", help="replace prices already present in the file")
+    f.add_argument("--invoice", action="append", help="match items automatically against this invoice (number, e.g. ЛП121541)")
     f.add_argument("--max-age-hours", type=float, default=48)
     f.add_argument("--allow-stale", action="store_true")
     f.set_defaults(func=cmd_fill)
