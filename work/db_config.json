@@ -1,5 +1,5 @@
 {
-  "database_path": "C:\\Users\\admla\\Documents\\Codex\\2026-06-02\\files-mentioned-by-the-user-02\\outputs\\cvsig_prices_2026-06-02.sqlite",
+  "database_path": "../outputs/cvsig_prices_2026-06-02.sqlite",
   "source_excel_path": "C:\\Users\\admla\\Downloads\\02.06 ЦВСИГ.xlsx",
   "source_files": [
     {
@@ -41,5 +41,6 @@
     "Use v_prices for normalized one-row-per-price-kind queries.",
     "All uploaded source prices are to be treated as with VAT, even if a source header says without VAT.",
     "The 2026-04-24 reliable reference stores unit prices only; total_price values are intentionally null."
-  ]
+  ],
+  "database_path_note": "Relative to this file. Override with the CVSIG_DB environment variable."
 }

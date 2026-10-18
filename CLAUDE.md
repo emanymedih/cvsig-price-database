@@ -9,18 +9,25 @@
 Все цены считать **с НДС**, даже если в заголовке источника написано «без НДС» (подтверждено пользователем 2026-06-08). Цены не умножать и не делить из-за текста заголовка.
 
 ## Как смотреть данные
-Открывать только на чтение, из корня репозитория:
+Через помощник (только чтение, работает из любой папки):
 
 ```bash
-python3 -c "import sqlite3;c=sqlite3.connect('file:outputs/cvsig_prices_2026-06-02.sqlite?mode=ro',uri=True);[print(r) for r in c.execute('SELECT ... LIMIT 20')]"
+python3 work/query_prices.py search "с2000 кдл"     # все слова, любой регистр, свежие первыми (лимит 30)
+python3 work/query_prices.py system "АПС"            # одна система (лимит 200)
+python3 work/query_prices.py sql "SELECT ... FROM v_price_lines WHERE ulower(name) LIKE '%кабель%'"   # лимит 50
+python3 work/query_prices.py summary                 # источники и число строк по системам
 ```
+
+- Для кириллицы в SQL использовать `ulower(col) LIKE '%...%'`: обычный `LIKE`/`lower()` не понимает регистр кириллицы и теряет совпадения (по «кабель» 77 вместо 294).
+- При обрезке выдачи скрипт пишет `... truncated`: лучше сузить запрос, чем поднимать `--limit`.
+- Другую базу можно указать через переменную `CVSIG_DB`.
 
 Начинать с представлений, а не с таблиц:
 - `v_price_lines`: одна строка на позицию (материал и монтаж рядом). Колонки: `price_date, system, position, name, type_code_article, manufacturer, unit, quantity, material_unit_price_rub, material_total_price_rub, installation_unit_price_rub, installation_total_price_rub, note, excel_row`.
 - `v_prices`: нормализованные записи, `price_kind` = `material` | `installation`.
-- Всегда ставить `LIMIT`. Всего 3003 строки, но в `note` у «Надежной базы» длинные строки, лишний вывод сжигает токены.
+- Не выбирать `note` и `*_vat_note` без нужды: в `note` у «Надежной базы» длинные строки, а `vat_note` везде означает «с НДС».
 
-`work/query_prices.py` и `work/db_config.json` пока содержат пути Windows и на Linux не работают (молча создают пустую базу). Не запускать, пока пути не исправлены.
+Скрипты `work/import_*.py`, `update_price_views.py`, `verify_cvsig_db.py`, `mark_all_prices_with_vat.py` содержат пути Windows и работают только на компьютере пользователя.
 
 ## Источники (snapshot -> `price_date`)
 | Источник | Дата | Строк |
