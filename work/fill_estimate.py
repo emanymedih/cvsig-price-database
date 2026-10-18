@@ -42,6 +42,7 @@ DB = ROOT / "outputs" / "cvsig_prices_2026-06-02.sqlite"
 TINKO_DIR = ROOT / "suppliers" / "tinko"
 WATCH = TINKO_DIR / "watch.csv"
 PAGES = ROOT / "suppliers" / "pages" / "prices.csv"
+INVOICES = ROOT / "suppliers" / "invoices"
 MAPPING = ROOT / "mapping" / "items.csv"
 MSK = dt.timezone(dt.timedelta(hours=3))
 YELLOW = PatternFill("solid", fgColor="FFC7CE")  # no price found (light red, Excel "Bad")
@@ -228,6 +229,73 @@ def check_fresh(meta: dict, max_age_h: float, allow_stale: bool) -> str:
     if age > max_age_h and not allow_stale:
         raise SystemExit(msg + f": старше {max_age_h:g} ч. Запустите workflow tinko-prices или добавьте --allow-stale")
     return msg
+
+
+def load_invoices() -> list[dict]:
+    """Goods lines of supplier invoices (work/parse_invoice.py); a newer invoice wins."""
+    rows = []
+    for path in sorted(INVOICES.glob("*.csv")):
+        with path.open(encoding="utf-8") as f:
+            for r in csv.DictReader(f):
+                r["k_name"], r["toks"] = key(r["name"]), tokens(r["name"])
+                r["k_code"] = key(r["code"])
+                r["price"] = float(r["price_rub"])
+                r["ref"] = f"{r['invoice']}:{r['line']}"
+                rows.append(r)
+    return rows
+
+
+def invoice_candidates(it: Item, inv: list[dict], me: dict):
+    if me.get("invoice"):
+        return [r for r in inv if r["ref"] == me["invoice"]], "справочник"
+    ck, ak, at = key(it.code), key(it.article), tokens(it.article)
+    if len(ck) >= 4:
+        c = [r for r in inv if ck == r["k_code"] or (ck in r["k_name"] and contains_seq(r["toks"], tokens(it.code)))]
+        if c:
+            return c, "по коду"
+    if len(ak) >= 4 and distinctive(at):
+        c = [r for r in inv if ak in r["k_name"] and contains_seq(r["toks"], at)]
+        if c:
+            return c, "по артикулу"
+    return [], ""
+
+
+def invoice_result(it: Item, inv: list[dict], me: dict) -> Result | None:
+    cands, how = invoice_candidates(it, inv, me)
+    if not cands:
+        if me.get("invoice"):
+            return Result(notes=[f"строки счёта {me['invoice']} из справочника нет в suppliers/invoices"])
+        return None
+    newest = max(c["date"] for c in cands)
+    cands = [c for c in cands if c["date"] == newest]
+    conv = []
+    for r in cands:
+        if me.get("material_factor"):
+            f, note, sure = parse_factor(me["material_factor"]), f"коэффициент из справочника × {me['material_factor']}", True
+        else:
+            f, note, sure = unit_factor(r["unit"], it.unit, r["name"], it.text)
+        if f is not None:
+            conv.append((r, round(r["price"] * f, 2), note, sure))
+    if not conv:
+        return None
+    prices = sorted({c[1] for c in conv})
+    res = Result(how=how)
+    if len(prices) > 1:
+        res.status = AMBIG
+        res.alts = "; ".join(f"[{c[0]['ref']}] {c[0]['name'][:60]} — {fmt(c[1])}" for c in conv[:6])
+        res.notes.append("в счёте несколько подходящих строк с разной ценой — выберите (mapping/items.csv, invoice)")
+        return res
+    r, price, note, sure = conv[0]
+    res.price = price
+    res.status = OK if (how in ("справочник", "по коду") and sure) or me.get("material_status") == "confirmed" else CHECK
+    if note:
+        res.notes.append(note)
+    if me.get("material_comment"):
+        res.notes.append(me["material_comment"])
+    res.src = {"supplier": f"{r['supplier']}, счёт {r['invoice']} от {r['date']}", "code": r["code"], "name": r["name"],
+               "maker": r["maker"], "unit": r["unit"], "price": r["price"], "factor": None, "availability": "",
+               "url": f"строка {r['line']}"}
+    return res
 
 
 def load_pages() -> dict:
@@ -544,7 +612,7 @@ SRC_COLUMNS = [
     ("Тип / марка (смета)", 26, "text"), ("Ед.", 6, "center"), ("Кол-во", 9, "num"),
     ("Цена, ₽/ед.", 15, "money"), ("Статус", 12, "center"), ("Поставщик", 12, "center"), ("Код", 9, "center"),
     ("Наименование у поставщика", 36, "text"), ("Производитель", 14, "center"), ("Ед. пост.", 7, "center"),
-    ("Цена пост., ₽", 15, "money"), ("Наличие", 11, "center"), ("Ссылка", 30, "text"), ("Комментарий", 44, "text"),
+    ("Цена пост., ₽", 15, "money"), ("Наличие", 11, "center"), ("Ссылка / строка счёта", 30, "text"), ("Комментарий", 44, "text"),
     ("Цена, ₽/ед.", 15, "money"), ("Статус", 12, "center"), ("Источник", 26, "text"), ("Дата цены", 11, "center"),
     ("Строка в источнике", 9, "center"), ("Позиция в источнике", 36, "text"), ("Более ранние цены", 26, "text"),
     ("Комментарий", 40, "text"),
@@ -661,7 +729,7 @@ def write_sources(wb, items, results, meta, estimate_name):
     now = dt.datetime.now(MSK)
     head = [
         (f"Источники цен: «{estimate_name}», заполнено {now:%d.%m.%Y %H:%M} МСК", Font(name=FONT_NAME, size=14, bold=True)),
-        (f"Материал — розничная цена ТД ТИНКО с НДС («{meta['source_title']}»); если у Тинко позиции нет — "
+        (f"Материал — цена по счёту поставщика, если позиция есть в счёте (suppliers/invoices); иначе розничная цена ТД ТИНКО с НДС («{meta['source_title']}»); если у Тинко позиции нет — "
          "розница со страницы товара (ссылка в строке).", None),
         ("Монтаж — самая свежая цена из базы cvsig_prices; если на эту дату цен несколько — взята большая.", None),
         ("Подсветка: светло-жёлтая — цена вписана, но её нужно проверить (причина в комментарии); "
@@ -716,7 +784,7 @@ def write_sources(wb, items, results, meta, estimate_name):
             else:
                 cell.alignment = Alignment(horizontal="left" if kind == "text" else "center", vertical="top",
                                            wrap_text=True)
-        if ms.get("url"):
+        if str(ms.get("url") or "").startswith("http"):
             link = ws.cell(i, 16)
             link.hyperlink = ms["url"]
             link.font = Font(name=FONT_NAME, size=11, color="0563C1", underline="single")
@@ -781,12 +849,17 @@ def cmd_fill(args):
     missing = sorted({t for it in items for t in watch_terms(it) if key(t) not in watched})
     if missing:
         raise SystemExit(f"Нет в списке наблюдения ({len(missing)}): сначала `plan`, push и workflow. Пример: {missing[:5]}")
-    pages, mapping, base = load_pages(), load_mapping(), load_base()
+    pages, mapping, base, invoices = load_pages(), load_mapping(), load_base(), load_invoices()
     capped = {key(t) for t in meta.get("capped_terms", [])}
     results = []
     for it in items:
         me = mapping_for(it, mapping)
         mat = match_material(it, trows, pages, me, base, capped)
+        by_invoice = invoice_result(it, invoices, me)
+        if by_invoice is not None and (by_invoice.price is not None or by_invoice.status == AMBIG):
+            if mat.price is not None and mat.src.get("supplier") == "ТД ТИНКО":
+                by_invoice.notes.append(f"сверка: розница Тинко {fmt(mat.price)} (код {mat.src['code']})")
+            mat = by_invoice
         inst = match_installation(it, base, me)
         if mat.price and inst.price and inst.price > 10 * mat.price:
             inst.status = CHECK
