@@ -25,7 +25,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import openpyxl
-from openpyxl.styles import Alignment, Font, PatternFill
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -44,8 +44,14 @@ WATCH = TINKO_DIR / "watch.csv"
 PAGES = ROOT / "suppliers" / "pages" / "prices.csv"
 MAPPING = ROOT / "mapping" / "items.csv"
 MSK = dt.timezone(dt.timedelta(hours=3))
-YELLOW = PatternFill("solid", fgColor="FFF2CC")  # no price found
-ORANGE = PatternFill("solid", fgColor="FCE4D6")  # price written, needs a check
+YELLOW = PatternFill("solid", fgColor="FFC7CE")  # no price found (light red, Excel "Bad")
+ORANGE = PatternFill("solid", fgColor="FFEB9C")  # price written, needs a check (light yellow, Excel "Neutral")
+HEAD_FILL = PatternFill("solid", fgColor="FCE8DA")  # header fill of the estimate template
+THIN = Side(style="thin", color="000000")
+GRID = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
+# Excel "Финансовый" (accounting) format in roubles: aligned symbol, dash for zero.
+FIN = '_-* #,##0.00 [$₽-419]_-;-* #,##0.00 [$₽-419]_-;_-* "-"?? [$₽-419]_-;_-@_-'
+FONT_NAME = "Times New Roman"
 TINKO_URL = "https://www.tinko.ru/catalog/product/{:06d}/"
 OK, CHECK, AMBIG, NONE, KEPT = "ОК", "Проверить", "Неоднозначно", "Не найдено", "Из файла"
 
@@ -522,35 +528,130 @@ def match_installation(it: Item, base: list[dict], me: dict) -> Result:
 
 # ---------------------------------------------------------------- output
 
+# (title, width, kind): kind = text | center | money | num
+SRC_GROUPS = [("Позиция сметы", 6), ("Материал", 11), ("Монтаж", 8)]
 SRC_COLUMNS = [
-    ("Строка", 7), ("Поз.", 6), ("Наименование (смета)", 34), ("Тип / марка (смета)", 26), ("Ед.", 6), ("Кол-во", 8),
-    ("Материал, ₽/ед.", 13), ("Статус материала", 13), ("Поставщик", 11), ("Код", 9), ("Наименование у поставщика", 40),
-    ("Производитель", 14), ("Ед. пост.", 7), ("Цена пост., ₽", 12), ("Наличие", 12), ("Ссылка", 34),
-    ("Комментарий (материал)", 46),
-    ("Монтаж, ₽/ед.", 12), ("Статус монтажа", 13), ("Источник монтажа", 34), ("Дата цены", 11), ("Строка в источнике", 9),
-    ("Позиция в источнике", 40), ("Более ранние цены", 30), ("Комментарий (монтаж)", 40),
+    ("Строка", 7, "center"), ("Поз.", 6, "center"), ("Наименование (смета)", 34, "text"),
+    ("Тип / марка (смета)", 26, "text"), ("Ед.", 6, "center"), ("Кол-во", 9, "num"),
+    ("Цена, ₽/ед.", 15, "money"), ("Статус", 12, "center"), ("Поставщик", 12, "center"), ("Код", 9, "center"),
+    ("Наименование у поставщика", 36, "text"), ("Производитель", 14, "center"), ("Ед. пост.", 7, "center"),
+    ("Цена пост., ₽", 15, "money"), ("Наличие", 11, "center"), ("Ссылка", 30, "text"), ("Комментарий", 44, "text"),
+    ("Цена, ₽/ед.", 15, "money"), ("Статус", 12, "center"), ("Источник", 26, "text"), ("Дата цены", 11, "center"),
+    ("Строка в источнике", 9, "center"), ("Позиция в источнике", 36, "text"), ("Более ранние цены", 26, "text"),
+    ("Комментарий", 40, "text"),
 ]
+
+
+def _lines(value, width: float) -> int:
+    """Rough number of wrapped lines a value takes in a column of the given width."""
+    if value is None or value == "":
+        return 1
+    chars = max(width * 0.95 - 2, 1)  # conservative: a clipped line is worse than a little extra height
+    return sum(max(1, -(-len(part) // int(chars))) for part in str(value).split("\n"))
+
+
+def fit_height(ws, row: int, widths: dict, pt: float = 12, min_h: float = 18) -> None:
+    lines = max(_lines(ws.cell(row, c).value, w) for c, w in widths.items())
+    ws.row_dimensions[row].height = max(min_h, lines * pt * 1.22 + 5)
+
+
+def style_estimate(ws, lay: dict, items) -> None:
+    """Tidy the estimate sheet: accounting money format, alignment, grid, row heights, print titles."""
+    last_col = max(c for c in range(1, ws.max_column + 1)
+                   if any(ws.cell(r, c).value is not None for r in range(lay["header"], ws.max_row + 1)))
+    widths = {c: (ws.column_dimensions[get_column_letter(c)].width or 9) for c in range(1, last_col + 1)}
+    money_cols = {lay["mat"], lay["mat"] + 1, lay["inst"], lay["inst"] + 1}
+    for row in ws.iter_rows(min_row=lay["header"], max_row=ws.max_row, max_col=last_col):
+        for cell in row:
+            if "₽" in (cell.number_format or "") or "руб" in (cell.number_format or ""):
+                cell.number_format = FIN
+    for it in items:
+        r = it.row
+        for c in range(1, last_col + 1):
+            cell = ws.cell(r, c)
+            cell.border = GRID
+            cell.font = Font(name=FONT_NAME, size=12)
+            if c in money_cols:
+                cell.number_format = FIN
+                cell.alignment = Alignment(horizontal="right", vertical="center")
+            elif c == lay["name"]:
+                cell.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True, indent=1)
+            else:
+                cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        fit_height(ws, r, {c: widths[c] for c in range(1, last_col + 1) if c not in money_cols})
+    # totals and "прочие расходы": percentages centred, text next to them left-aligned, money bold where it was
+    for r in range(items[-1].row + 1 if items else lay["first"], ws.max_row + 1):
+        for c in range(1, last_col + 1):
+            cell = ws.cell(r, c)
+            if "%" in (cell.number_format or "") and isinstance(cell.value, (int, float)):
+                cell.alignment = Alignment(horizontal="center", vertical="center")
+                nxt = ws.cell(r, c + 1)
+                if isinstance(nxt.value, str):
+                    nxt.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True, indent=1)
+            elif cell.number_format == FIN:
+                cell.alignment = Alignment(horizontal="right", vertical="center")
+            elif isinstance(cell.value, str) and not cell.value.startswith("=") and c > 1 \
+                    and cell.alignment.horizontal in (None, "general", "left"):
+                cell.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True, indent=1)
+        label = ws.cell(r, 1)
+        if isinstance(label.value, str) and not label.value.startswith("="):
+            if items and r == items[-1].row + 1:  # the line that closes the item table
+                label.alignment = Alignment(horizontal="right", vertical="center", indent=1)
+            elif label.font.b and any(m.min_row == r and m.min_col == 1 and m.max_col >= 2 for m in ws.merged_cells.ranges):
+                label.alignment = Alignment(horizontal="left", vertical="center", indent=1)
+        # rows of the "прочие расходы" table: an empty block under the price columns becomes one merged cell
+        block = range(lay["mat"], lay["inst"] + 2)
+        merged_here = any(m.min_row <= r <= m.max_row and m.min_col <= lay["mat"] <= m.max_col for m in ws.merged_cells.ranges)
+        if not merged_here and ws.cell(r, 1).value is not None and ws.cell(r, last_col).value is not None \
+                and all(ws.cell(r, c).value is None for c in block):
+            ws.merge_cells(start_row=r, start_column=block[0], end_row=r, end_column=block[-1])
+    ws.print_title_rows = f"{lay['header']}:{lay['first'] - 1}"
+    ws.page_setup.orientation = "landscape"
+    ws.page_setup.fitToWidth, ws.page_setup.fitToHeight = 1, 0
+    ws.sheet_properties.pageSetUpPr.fitToPage = True
+    ws.print_options.horizontalCentered = True
 
 
 def write_sources(wb, items, results, meta, estimate_name):
     if "Источники" in wb.sheetnames:
         del wb["Источники"]
     ws = wb.create_sheet("Источники")
+    ncol = len(SRC_COLUMNS)
+    last = get_column_letter(ncol)
     now = dt.datetime.now(MSK)
     head = [
-        f"Источники цен для «{estimate_name}», заполнено {now:%d.%m.%Y %H:%M} МСК",
-        f"Материал: розничная цена ТД ТИНКО с НДС — «{meta['source_title']}»; если у Тинко позиции нет — розница со страницы товара (ссылка в строке).",
-        "Монтаж: самая свежая цена из базы cvsig_prices; если на эту дату цен несколько — взята большая.",
-        "Лист сметы: жёлтая ячейка — цену подобрать не удалось; оранжевая — цена вписана, но её нужно проверить (причина в комментарии).",
+        (f"Источники цен: «{estimate_name}», заполнено {now:%d.%m.%Y %H:%M} МСК", Font(name=FONT_NAME, size=14, bold=True)),
+        (f"Материал — розничная цена ТД ТИНКО с НДС («{meta['source_title']}»); если у Тинко позиции нет — "
+         "розница со страницы товара (ссылка в строке).", None),
+        ("Монтаж — самая свежая цена из базы cvsig_prices; если на эту дату цен несколько — взята большая.", None),
+        ("Подсветка: светло-жёлтая — цена вписана, но её нужно проверить (причина в комментарии); "
+         "светло-красная — цену подобрать не удалось.", None),
     ]
-    for i, line in enumerate(head, 1):
-        ws.cell(i, 1, line).font = Font(bold=(i == 1))
-    hr = len(head) + 2
-    for c, (title, width) in enumerate(SRC_COLUMNS, 1):
-        cell = ws.cell(hr, c, title)
-        cell.font = Font(bold=True)
-        cell.alignment = Alignment(wrap_text=True, vertical="top")
+    for i, (line, font) in enumerate(head, 1):
+        ws.merge_cells(f"A{i}:{last}{i}")
+        cell = ws.cell(i, 1, line)
+        cell.font = font or Font(name=FONT_NAME, size=11)
+        cell.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
+        ws.row_dimensions[i].height = 22 if i == 1 else 17
+    g, hr = len(head) + 2, len(head) + 3  # group header row, column header row
+    col = 1
+    for title, span in SRC_GROUPS:
+        ws.merge_cells(start_row=g, start_column=col, end_row=g, end_column=col + span - 1)
+        ws.cell(g, col, title)
+        col += span
+    for c, (title, width, _) in enumerate(SRC_COLUMNS, 1):
+        ws.cell(hr, c, title)
         ws.column_dimensions[get_column_letter(c)].width = width
+    for r in (g, hr):
+        for c in range(1, ncol + 1):
+            cell = ws.cell(r, c)
+            cell.font = Font(name=FONT_NAME, size=11, bold=True)
+            cell.fill = HEAD_FILL
+            cell.border = GRID
+            cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    ws.row_dimensions[g].height = 18
+    ws.row_dimensions[hr].height = 32
+    widths = {c: w for c, (_, w, _) in enumerate(SRC_COLUMNS, 1)}
     for i, (it, mat, inst) in enumerate(results, hr + 1):
         ms, ins = mat.src, inst.src
         values = [
@@ -562,20 +663,38 @@ def write_sources(wb, items, results, meta, estimate_name):
             " / ".join(x for x in (ins.get("name", ""), ins.get("article", "")) if x), inst.alts, "; ".join(inst.notes),
         ]
         for c, v in enumerate(values, 1):
-            cell = ws.cell(i, c, v)
-            cell.alignment = Alignment(wrap_text=True, vertical="top")
-            if isinstance(v, float):
-                cell.number_format = "#,##0.00"
+            kind = SRC_COLUMNS[c - 1][2]
+            cell = ws.cell(i, c, v if v != "" else None)
+            cell.font = Font(name=FONT_NAME, size=11)
+            cell.border = GRID
+            if kind == "money":
+                cell.number_format = FIN
+                cell.alignment = Alignment(horizontal="right", vertical="top")
+            elif kind == "num":
+                cell.number_format = "#,##0.###"
+                cell.alignment = Alignment(horizontal="center", vertical="top")
+            else:
+                cell.alignment = Alignment(horizontal="left" if kind == "text" else "center", vertical="top",
+                                           wrap_text=True)
         if ms.get("url"):
-            ws.cell(i, 16).hyperlink = ms["url"]
-            ws.cell(i, 16).style = "Hyperlink"
-        for col, st in ((8, mat.status), (19, inst.status)):
+            link = ws.cell(i, 16)
+            link.hyperlink = ms["url"]
+            link.font = Font(name=FONT_NAME, size=11, color="0563C1", underline="single")
+        for c, st in ((8, mat.status), (19, inst.status)):
             if st in (NONE, AMBIG):
-                ws.cell(i, col).fill = YELLOW
+                ws.cell(i, c).fill = YELLOW
             elif st == CHECK:
-                ws.cell(i, col).fill = ORANGE
-    ws.freeze_panes = ws.cell(hr + 1, 3)
-    ws.auto_filter.ref = f"A{hr}:{get_column_letter(len(SRC_COLUMNS))}{hr + len(results)}"
+                ws.cell(i, c).fill = ORANGE
+        fit_height(ws, i, widths, pt=11, min_h=16)
+    ws.freeze_panes = ws.cell(hr + 1, 4)
+    ws.auto_filter.ref = f"A{hr}:{last}{hr + len(results)}"
+    ws.print_title_rows = f"{g}:{hr}"
+    ws.page_setup.orientation = "landscape"
+    ws.page_setup.paperSize = ws.PAPERSIZE_A3
+    ws.page_setup.fitToWidth, ws.page_setup.fitToHeight = 1, 0
+    ws.sheet_properties.pageSetUpPr.fitToPage = True
+    ws.page_margins.left = ws.page_margins.right = 0.4
+    ws.sheet_view.zoomScale = 85
 
 
 def put_price(ws, row, col, res: Result, overwrite: bool):
@@ -635,6 +754,7 @@ def cmd_fill(args):
         put_price(ws, it.row, lay["mat"], mat, args.overwrite)
         put_price(ws, it.row, lay["inst"], inst, args.overwrite)
         results.append((it, mat, inst))
+    style_estimate(ws, lay, items)
     write_sources(wb, items, results, meta, args.estimate.name)
     out = args.output or args.estimate.with_name(f"{args.estimate.stem}_цены_{dt.date.today():%Y-%m-%d}.xlsx")
     wb.save(out)
