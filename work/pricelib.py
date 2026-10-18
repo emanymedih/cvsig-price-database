@@ -32,7 +32,7 @@ def key(text) -> str:
 
 def tokens(text) -> list[str]:
     """Word tokens that keep hyphenated model names whole: "С2000-КДЛ-С" is one token."""
-    s = _prep(text).replace(",", ".")
+    s = re.sub("[‐‑–—]", "-", _prep(text)).replace(",", ".")
     s = re.sub("[" + re.escape(_QUOTES) + r"()\[\]{}]", "", s)
     out = []
     for t in _TOKEN.findall(s):
@@ -70,6 +70,18 @@ def strip_paren(text) -> str:
     Brackets glued to a word are part of the model name and stay: "КПСнг(А)-FRHF".
     """
     return re.sub(r"\s+", " ", re.sub(r"\s\([^()]*\)", " ", str(text or ""))).strip()
+
+
+def trailing_variants(text) -> list[str]:
+    """Text with trailing " (...)" groups removed one by one:
+    "С2000-БКИ (2xRS-485) (два интерфейса)" -> ["С2000-БКИ (2xRS-485)", "С2000-БКИ"]."""
+    out, s = [], str(text or "").strip()
+    while True:
+        m = re.match(r"^(.*\S)\s+[(\[][^()\[\]]*[)\]]\s*$", s)
+        if not m:
+            return out
+        s = m.group(1)
+        out.append(s)
 
 
 def strip_variant(text) -> str:

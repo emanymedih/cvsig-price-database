@@ -30,7 +30,8 @@ from openpyxl.utils import get_column_letter
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from pricelib import (  # noqa: E402
-    contains_seq, distinctive, key, paren_keys, same_maker, strip_paren, strip_variant, tokens, unit_factor,
+    contains_seq, distinctive, key, paren_keys, same_maker, strip_paren, strip_variant, tokens, trailing_variants,
+    unit_factor,
 )
 
 if hasattr(sys.stdout, "reconfigure"):
@@ -205,6 +206,7 @@ def load_tinko():
     with (TINKO_DIR / "prices.csv").open(encoding="utf-8") as f:
         for r in csv.DictReader(f):
             r["k_trade"], r["k_art"], r["k_art2"] = key(r["trade_name"]), key(r["article"]), key(r["article_extra"])
+            r["k_trade_vars"] = {key(v) for v in trailing_variants(r["trade_name"])}
             r["k_name"] = key(r["name"])
             r["paren"] = paren_keys(r["name"]) | paren_keys(r["trade_name"])
             r["toks"] = tokens(r["trade_name"]) + ["|"] + tokens(r["name"])
@@ -260,7 +262,7 @@ def load_base() -> list[dict]:
             "kind": kind, "price": price, "sid": sid, "date": date, "source": re.split(r"[\\/]", src)[-1],
             "system": system, "excel_row": xrow, "unit": unit, "name": name or "", "article": art,
             "k_art": k_art, "k_text": key(name) + "|" + k_art, "toks": tokens(name) + ["|"] + tokens(art),
-            "paren": paren_keys(name), "raw": f"{name} {art}",
+            "paren": paren_keys(name), "raw": f"{name} {art}", "tok_keys": {key(t) for t in tokens(f"{name} {art}")},
         })
     conn.close()
     return rows
@@ -287,6 +289,14 @@ def code_conflict(it: Item, text: str) -> bool:
     return bool(found) and it.code.lower() not in found
 
 
+def first_word(name: str) -> str:
+    """First meaningful word of an estimate name ("Шпилька", "Труба") for size-only articles."""
+    for t in tokens(name)[:3]:
+        if distinctive([t]) and len(t) >= 4:
+            return t
+    return ""
+
+
 def tinko_candidates(it: Item, rows: list[dict]):
     ck, ak = key(it.code), key(it.article)
     if len(ck) >= 4:
@@ -294,7 +304,7 @@ def tinko_candidates(it: Item, rows: list[dict]):
         if c:
             return c, "по коду"
     if len(ak) >= 3:
-        c = [r for r in rows if ak in (r["k_trade"], r["k_art"], r["k_art2"])]
+        c = [r for r in rows if ak in (r["k_trade"], r["k_art"], r["k_art2"]) or ak in r["k_trade_vars"]]
         if c:
             return c, "по артикулу"
     at = tokens(it.article)
@@ -303,6 +313,11 @@ def tinko_candidates(it: Item, rows: list[dict]):
              and not code_conflict(it, r["name"])]
         if c:
             return c, "по названию"
+    w = first_word(it.name)
+    if at and not distinctive(at) and len(ak) >= 4 and w:
+        c = [r for r in rows if ak in r["k_name"] and w in r["toks"]]
+        if c:
+            return c, "по названию и размеру"
     return [], ""
 
 
@@ -321,6 +336,10 @@ def base_candidates(it: Item, rows: list[dict], kind: str, rule: str = ""):
                 vk, vt = key(val), tokens(val)
                 out += [r for r in rows if vk in r["k_text"] and contains_seq(r["toks"], vt)]
         return list({id(r): r for r in out}.values()), "справочник"
+    ck = key(it.code)
+    by_code = [r for r in rows if len(ck) >= 4 and (r["k_art"] == ck or ck in r["paren"] or ck in r["tok_keys"])]
+    if by_code:  # the supplier code is the most specific identifier
+        return by_code, "по коду"
     tried = set()
     for label, art in (("артикул", it.article), ("артикул без скобок", strip_paren(it.article)),
                        ("без исполнения", strip_variant(it.article))):
@@ -330,16 +349,23 @@ def base_candidates(it: Item, rows: list[dict], kind: str, rule: str = ""):
         tried.add(ak)
         c = [r for r in rows if r["k_art"] == ak]
         if distinctive(at) and len(ak) >= 4:
-            c += [r for r in rows if r["k_art"] != ak and ak in r["k_text"] and contains_seq(r["toks"], at)]
+            c += [r for r in rows if r["k_art"] != ak and ak in r["k_text"]
+                  and (contains_seq(r["toks"], at) or ak in r["tok_keys"])]
         c = [r for r in c if not code_conflict(it, r["raw"])]
         if c:
             return c, label
-    ck = key(it.code)
-    if len(ck) >= 4:
-        c = [r for r in rows if r["k_art"] == ck or ck in r["paren"]]
+    at, ak, w = tokens(it.article), key(it.article), first_word(it.name)
+    if at and not distinctive(at) and len(ak) >= 4 and w:
+        c = [r for r in rows if ak in r["k_text"] and w in r["toks"] and not code_conflict(it, r["raw"])]
         if c:
-            return c, "по коду"
+            return c, "по названию и размеру"
     return [], ""
+
+
+def parse_factor(text: str) -> float:
+    """'0.5', '100', '1/3' -> float."""
+    a, _, b = text.replace(",", ".").partition("/")
+    return float(a) / float(b) if b else float(a)
 
 
 def fmt(p: float) -> str:
@@ -370,8 +396,12 @@ def match_material(it: Item, trows: list[dict], pages: dict, me: dict, base: lis
             res.notes.append(f"код Тинко {me['tinko_code']} из справочника нет в выгрузке")
     else:
         cands, how = tinko_candidates(it, trows)
-    if any(key(t) in capped for t in watch_terms(it)):
-        res.notes.append("запрос слишком общий: у поставщика много похожих позиций")
+    if how not in ("по коду", "по артикулу", "справочник") and any(key(t) in capped for t in watch_terms(it)):
+        res.notes.append("запрос слишком общий: у поставщика много похожих позиций, часть могла не попасть в выгрузку")
+    if not it.article and not it.code:
+        res.notes.append("в смете нет марки/артикула — цену поставщика подобрать нельзя")
+    if me.get("material_comment"):
+        res.notes.append(me["material_comment"])
     cands = [r for r in cands if r["price"] and (r["currency"] or "руб").lower().startswith("руб")]
     maker_conflict = False
     if it.maker and cands:
@@ -384,7 +414,7 @@ def match_material(it: Item, trows: list[dict], pages: dict, me: dict, base: lis
     conv = []
     for r in cands:
         if me.get("material_factor"):
-            f, note, sure = float(me["material_factor"]), f"коэффициент из справочника × {me['material_factor']}", True
+            f, note, sure = parse_factor(me["material_factor"]), f"коэффициент из справочника × {me['material_factor']}", True
         else:
             f, note, sure = unit_factor(r["unit"], it.unit, r["name"], it.text)
         if f is not None:
@@ -407,7 +437,8 @@ def match_material(it: Item, trows: list[dict], pages: dict, me: dict, base: lis
             return res
         r, f, note, sure = conv[0]
         res.price, res.how = prices[0], how
-        res.status = OK if (how != "по названию" and sure and not maker_conflict and me.get("status") != "review") else CHECK
+        res.status = OK if (how in ("по коду", "по артикулу", "справочник") and sure and not maker_conflict
+                            and me.get("material_status") != "review") else CHECK
         if note:
             res.notes.append(note)
         if len(conv) > 1:
@@ -415,6 +446,8 @@ def match_material(it: Item, trows: list[dict], pages: dict, me: dict, base: lis
             res.notes.append("подходят несколько позиций с одинаковой ценой: " + ", ".join(c[0]["code"] for c in conv))
         if how == "по названию":
             res.notes.append("найдено по вхождению артикула в название")
+        elif how == "по названию и размеру":
+            res.notes.append("найдено по названию и размеру — артикула в смете нет")
         if (r["availability"] or "").lower().startswith("звон"):
             res.notes.append("на складе нет («Звоните»), цена по действующему прайсу")
         res.src = {
@@ -431,7 +464,7 @@ def match_material(it: Item, trows: list[dict], pages: dict, me: dict, base: lis
         return res
 
     if page_price:
-        f = float(me["material_factor"]) if me.get("material_factor") else 1.0
+        f = parse_factor(me["material_factor"]) if me.get("material_factor") else 1.0
         res.price, res.status, res.how = round(page_price * f, 2), CHECK, "страница товара"
         res.notes.append(f"розница {page['supplier']}; НДС на сайте не указан")
         res.src = {"supplier": page["supplier"], "code": "", "name": page["name"], "maker": "", "unit": "",
@@ -449,10 +482,12 @@ def match_installation(it: Item, base: list[dict], me: dict) -> Result:
     res = Result()
     cands, how = base_candidates(it, base, "installation", me.get("install_match", ""))
     res.how = how
+    if how == "справочник" and me.get("install_comment"):
+        res.notes.append(me["install_comment"])
     conv = []
     for r in cands:
         if me.get("install_factor"):
-            f, note, sure = float(me["install_factor"]), f"коэффициент из справочника × {me['install_factor']}", True
+            f, note, sure = parse_factor(me["install_factor"]), f"коэффициент из справочника × {me['install_factor']}", True
         else:
             f, note, sure = unit_factor(r["unit"], it.unit, r["name"], it.text)
         if f is not None:
@@ -465,9 +500,9 @@ def match_installation(it: Item, base: list[dict], me: dict) -> Result:
     r, price, note, sure = top[0]
     res.price = price
     res.status = OK if how in ("артикул", "артикул без скобок", "по коду", "справочник") and sure else CHECK
-    if how == "справочник" and me.get("status") == "review":
+    if how == "справочник" and me.get("install_status") == "review":
         res.status = CHECK
-    if how in ("артикул без скобок", "без исполнения"):
+    if how in ("артикул без скобок", "без исполнения", "по названию и размеру"):
         res.notes.append(f"найдено {how}")
     if note:
         res.notes.append(note)
@@ -594,6 +629,9 @@ def cmd_fill(args):
         me = mapping_for(it, mapping)
         mat = match_material(it, trows, pages, me, base, capped)
         inst = match_installation(it, base, me)
+        if mat.price and inst.price and inst.price > 10 * mat.price:
+            inst.status = CHECK
+            inst.notes.append(f"монтаж в {inst.price / mat.price:.0f} раз дороже материала — проверьте")
         put_price(ws, it.row, lay["mat"], mat, args.overwrite)
         put_price(ws, it.row, lay["inst"], inst, args.overwrite)
         results.append((it, mat, inst))
