@@ -49,8 +49,8 @@ ORANGE = PatternFill("solid", fgColor="FFEB9C")  # price written, needs a check 
 HEAD_FILL = PatternFill("solid", fgColor="FCE8DA")  # header fill of the estimate template
 THIN = Side(style="thin", color="000000")
 GRID = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
-# Excel "Финансовый" (accounting) format in roubles: aligned symbol, dash for zero.
-FIN = '_-* #,##0.00 [$₽-419]_-;-* #,##0.00 [$₽-419]_-;_-* "-"?? [$₽-419]_-;_-@_-'
+# Excel "Финансовый" (accounting) format without a currency sign (user request 18.10.2026); dash for zero.
+FIN = '_-* #,##0.00_-;-* #,##0.00_-;_-* "-"??_-;_-@_-'
 FONT_NAME = "Times New Roman"
 TINKO_URL = "https://www.tinko.ru/catalog/product/{:06d}/"
 OK, CHECK, AMBIG, NONE, KEPT = "ОК", "Проверить", "Неоднозначно", "Не найдено", "Из файла"
@@ -454,6 +454,8 @@ def match_material(it: Item, trows: list[dict], pages: dict, me: dict, base: lis
             res.notes.append("найдено по вхождению артикула в название")
         elif how == "по названию и размеру":
             res.notes.append("найдено по названию и размеру — артикула в смете нет")
+        if me.get("material_status") == "confirmed" and res.status == CHECK:
+            res.status = OK
         if (r["availability"] or "").lower().startswith("звон"):
             res.notes.append("на складе нет («Звоните»), цена по действующему прайсу")
         res.src = {
@@ -465,7 +467,8 @@ def match_material(it: Item, trows: list[dict], pages: dict, me: dict, base: lis
             res.notes.append(f"сверка: {page['supplier']} {fmt(page_price)} ₽")
         ref = base_reference(it, base)
         if ref and not 0.5 <= res.price / ref["price"] <= 2.0:
-            res.status = CHECK
+            if me.get("material_status") != "confirmed":
+                res.status = CHECK
             res.notes.append(f"сильно отличается от базы: {fmt(round(ref['price'], 2))} ₽ на {ref['date']}")
         return res
 
@@ -502,7 +505,9 @@ def match_installation(it: Item, base: list[dict], me: dict) -> Result:
         res.notes.append("в базе нет цены монтажа" if not cands else "в базе есть цены, но в несовместимых единицах")
         return res
     top_date = max(c[0]["date"] for c in conv)
-    top = sorted((c for c in conv if c[0]["date"] == top_date), key=lambda c: (-c[1], -c[0]["sid"]))
+    def reliability(row):  # "Надежная база": AUTO_OK is trusted, CHECK must be verified, MANUAL is weak
+        return 2 if "MANUAL" in row["system"] else 1 if "CHECK" in row["system"] else 0
+    top = sorted((c for c in conv if c[0]["date"] == top_date), key=lambda c: (reliability(c[0]), -c[1], -c[0]["sid"]))
     r, price, note, sure = top[0]
     res.price = price
     res.status = OK if how in ("артикул", "артикул без скобок", "по коду", "справочник") and sure else CHECK
@@ -515,10 +520,14 @@ def match_installation(it: Item, base: list[dict], me: dict) -> Result:
     distinct = sorted({c[1] for c in top}, reverse=True)
     if len(distinct) > 1:
         res.status = CHECK
-        res.notes.append(f"на {top_date} в базе несколько цен ({', '.join(fmt(p) for p in distinct)}): взята большая")
+        best = [c for c in top if reliability(c[0]) == reliability(r)]
+        why = "взята большая" if len({c[1] for c in best}) > 1 else "взята более надёжная строка (AUTO_OK)"
+        res.notes.append(f"на {top_date} в базе несколько цен ({', '.join(fmt(p) for p in distinct)}): {why}")
     if "MANUAL" in r["system"]:
         res.status = CHECK
         res.notes.append("строка «Надежной базы» со статусом MANUAL")
+    if me.get("install_status") == "confirmed" and res.status == CHECK:
+        res.status = OK
     older = sorted({(c[0]["date"], c[1]) for c in conv if c[0]["date"] != top_date}, reverse=True)
     res.alts = "; ".join(f"{fmt(p)} ({d})" for d, p in older[:5])
     res.src = {"system": r["system"], "date": r["date"], "source": r["source"], "excel_row": r["excel_row"],
