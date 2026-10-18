@@ -1,0 +1,3 @@
+# Product pages to read retail prices from (one URL per line; text after "|" is a comment).
+# Used when TINKO has no such item; link the URL to an estimate item in mapping/items.csv (page_url).
+https://satro-paladin.com/catalog/product/1853/ | Астра-863 исп. А — проверочная страница

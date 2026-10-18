@@ -1,0 +1,42 @@
+name: tinko-prices
+# Keeps suppliers/tinko/prices.csv (only watched items) in sync with TINKO's daily export.
+on:
+  schedule:
+    - cron: "17 3 * * *"    # 06:17 MSK
+    - cron: "47 14 * * *"   # 17:47 MSK, after TINKO's ~17:30 export
+  push:
+    branches: [main]
+    paths:
+      - suppliers/tinko/watch.csv
+      - mapping/items.csv
+      - work/fetch_tinko.py
+      - work/pricelib.py
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: supplier-data
+  cancel-in-progress: false
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install openpyxl==3.1.5
+      - run: python work/fetch_tinko.py
+      - name: Commit if changed
+        run: |
+          if [ -z "$(git status --porcelain suppliers/tinko)" ]; then echo "No changes"; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add suppliers/tinko
+          git commit -q -m "Tinko prices: $(python -c 'import json;m=json.load(open("suppliers/tinko/meta.json"));print(m["source_timestamp"], m["selected_rows"], "rows")')"
+          for i in 1 2 3; do
+            git pull -q --rebase origin main && git push -q origin HEAD:main && exit 0
+            sleep 5
+          done
+          exit 1
