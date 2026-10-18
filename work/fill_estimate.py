@@ -559,6 +559,10 @@ def match_installation(it: Item, base: list[dict], me: dict) -> Result:
     res = Result()
     cands, how = base_candidates(it, base, "installation", me.get("install_match", ""))
     res.how = how
+    if how == "справочник: без цены":  # no separate installation (e.g. software): an explicit 0 shows as a dash
+        res.price, res.status = 0.0, OK
+        res.notes.append(me.get("install_comment") or "отдельного монтажа нет")
+        return res
     if how == "справочник" and me.get("install_comment"):
         res.notes.append(me["install_comment"])
     conv = []
