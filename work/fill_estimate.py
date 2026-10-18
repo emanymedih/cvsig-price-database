@@ -564,6 +564,36 @@ def fit_height(ws, row: int, widths: dict, pt: float = 12, min_h: float = 18) ->
     ws.row_dimensions[row].height = max(min_h, lines * pt * 1.22 + 5)
 
 
+def hide_rate_columns(ws, start: int, last_col: int) -> None:
+    """"Прочие расходы": hide «Ставка» and «База расчёта» (user request 18.10.2026).
+
+    The rates stay in their cells because the totals refer to them; format ";;;" only hides them,
+    and inner borders are removed so the expense name reads as one wide cell.
+    """
+    for r in range(start, ws.max_row + 1):
+        vals = {c: str(ws.cell(r, c).value or "").strip().lower() for c in range(1, last_col + 1)}
+        rate = next((c for c, v in vals.items() if v == "ставка"), None)
+        base = next((c for c, v in vals.items() if v.startswith("база расч")), None)
+        if not rate or not base:
+            continue
+        name_col = rate - 1
+        end = r + 1
+        while end <= ws.max_row and isinstance(ws.cell(end, rate).value, (int, float)) \
+                and str(ws.cell(end, 1).value or "").strip()[:1].isdigit():
+            end += 1
+        for row in range(r, end):
+            for c in range(rate, base + 1):
+                cell = ws.cell(row, c)
+                cell.number_format = ";;;"
+                b = cell.border
+                cell.border = Border(top=b.top, bottom=b.bottom, left=None,
+                                     right=b.right if c == base else None)
+            nb = ws.cell(row, name_col).border
+            ws.cell(row, name_col).border = Border(top=nb.top, bottom=nb.bottom, left=nb.left, right=None)
+        ws.cell(r, name_col).alignment = Alignment(horizontal="left", vertical="center", wrap_text=True, indent=1)
+        return
+
+
 def style_estimate(ws, lay: dict, items) -> None:
     """Tidy the estimate sheet: accounting money format, alignment, grid, row heights, print titles."""
     last_col = max(c for c in range(1, ws.max_column + 1)
@@ -606,7 +636,7 @@ def style_estimate(ws, lay: dict, items) -> None:
         if isinstance(label.value, str) and not label.value.startswith("="):
             if items and r == items[-1].row + 1:  # the line that closes the item table
                 label.alignment = Alignment(horizontal="right", vertical="center", indent=1)
-            elif label.font.b and any(m.min_row == r and m.min_col == 1 and m.max_col >= 2 for m in ws.merged_cells.ranges):
+            elif label.font.b and any(m.min_row == r and m.min_col == 1 and 2 <= m.max_col < last_col for m in ws.merged_cells.ranges):
                 label.alignment = Alignment(horizontal="left", vertical="center", indent=1)
         # rows of the "прочие расходы" table: an empty block under the price columns becomes one merged cell
         block = range(lay["mat"], lay["inst"] + 2)
@@ -614,6 +644,7 @@ def style_estimate(ws, lay: dict, items) -> None:
         if not merged_here and ws.cell(r, 1).value is not None and ws.cell(r, last_col).value is not None \
                 and all(ws.cell(r, c).value is None for c in block):
             ws.merge_cells(start_row=r, start_column=block[0], end_row=r, end_column=block[-1])
+    hide_rate_columns(ws, items[-1].row + 1 if items else lay["first"], last_col)
     ws.print_title_rows = f"{lay['header']}:{lay['first'] - 1}"
     ws.page_setup.orientation = "landscape"
     ws.page_setup.fitToWidth, ws.page_setup.fitToHeight = 1, 0
