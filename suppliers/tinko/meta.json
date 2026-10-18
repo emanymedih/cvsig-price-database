@@ -3,9 +3,9 @@
  "source_title": "Цены и остатки ТД ТИНКО на 17.10.2026 17:28:02",
  "source_timestamp": "2026-10-17T17:28:02+03:00",
  "source_rows": 84724,
- "selected_rows": 249,
- "watch_terms": 86,
- "watch_sha256": "0f43850f969d0614555d3f74cefa1af6d9c087a3b078a83e5ed7f7eab9db6daf",
+ "selected_rows": 307,
+ "watch_terms": 152,
+ "watch_sha256": "3b58b01f8c3fe1451d588282c4add90cba04aebe7db55c4dc3a95531caec879a",
  "capped_terms": [
   "АК-2",
   "МПН"
